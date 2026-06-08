@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    container_name: wb-telegram-bot
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/bot.db
+    volumes:
+      - bot_data:/app/data
+
+volumes:
+  bot_data:
