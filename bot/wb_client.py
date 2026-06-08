@@ -5,6 +5,7 @@ from wb_api.const import BaseURL
 
 
 API_BASE = "https://common-api.wildberries.ru"
+DISCOUNTS_PRICES_API = "https://discounts-prices-api.wildberries.ru"
 CONTENT_API = "https://content-api.wildberries.ru"
 MARKETPLACE_API = "https://marketplace-api.wildberries.ru"
 ANALYTICS_API = "https://seller-analytics-api.wildberries.ru"
@@ -49,8 +50,8 @@ class WbClient:
         return await self._request("get", f"{API_BASE}/api/v1/seller-info")
 
     async def get_products_list(self) -> dict:
-        payload = {"cursor": {"limit": 30}, "filter": {"withPhoto": -1}}
-        return await self._request("post", f"{CONTENT_API}/content/v2/cards/cursor/list", json=payload)
+        payload = {"settings": {"cursor": {"limit": 30}, "filter": {"withPhoto": -1}}}
+        return await self._request("post", f"{CONTENT_API}/content/v2/get/cards/list", json=payload)
 
     async def get_product_stocks(self, nm_ids: list[int] | None = None) -> list[dict]:
         params = {}
@@ -79,12 +80,12 @@ class WbClient:
 
     async def get_finance_report(self, date_from: str, date_to: str) -> list[dict]:
         params = {"dateFrom": date_from, "dateTo": date_to}
-        data = await self._request("get", f"{API_BASE}/api/v5/supplier/reportDetailByPeriod", params=params)
+        data = await self._request("get", f"{STATISTICS_API}/api/v5/supplier/reportDetailByPeriod", params=params)
         return data if isinstance(data, list) else []
 
     async def get_prices(self, nm_ids: list[int] | None = None) -> list[dict]:
         params = {}
         if nm_ids:
             params["nmIDs"] = nm_ids
-        data = await self._request("get", f"{MARKETPLACE_API}/api/v3/prices", params=params)
+        data = await self._request("get", f"{DISCOUNTS_PRICES_API}/api/v3/prices", params=params)
         return data if isinstance(data, list) else []
