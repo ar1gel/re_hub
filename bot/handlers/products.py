@@ -108,10 +108,13 @@ async def products_stocks(callback: CallbackQuery) -> None:
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
     for stock in stocks[:10]:
         nm_id = stock.get("nmId", "—")
-        qty = stock.get("quantity", 0)
-        warehouse = stock.get("warehouseName", "—")
-        text += f"• nmID: {nm_id}\n"
-        text += f"  Склад: {warehouse}, Остаток: {qty} шт.\n\n"
+        vendor = stock.get("vendorCode", "—")
+        warehouses = stock.get("warehouses", [])
+        total = sum(w.get("quantity", 0) for w in warehouses)
+        text += f"• nmID: {nm_id} ({vendor})\n"
+        text += f"  Всего: {total} шт.\n"
+        for w in warehouses[:3]:
+            text += f"    {w.get('warehouseName', '—')}: {w.get('quantity', 0)} шт.\n"
 
     if len(stocks) > 10:
         text += f"…и ещё {len(stocks) - 10}.\n"

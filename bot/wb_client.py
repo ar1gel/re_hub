@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 from aiohttp import ClientSession
@@ -57,11 +58,28 @@ class WbClient:
         payload = {"settings": {"cursor": {"limit": 30}, "filter": {"withPhoto": -1}}}
         return await self._request("post", f"{CONTENT_API}/content/v2/get/cards/list", json=payload)
 
-    async def get_product_stocks(self, date_from: str | None = None) -> list[dict]:
-        if date_from is None:
-            date_from = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
-        params = {"dateFrom": date_from}
-        data = await self._request("get", f"{STATISTICS_API}/api/v1/supplier/stocks", params=params)
+    async def get_product_stocks(self) -> list[dict]:
+        task_data = await self._request(
+            "get", f"{ANALYTICS_API}/api/v1/warehouse_remains",
+            params={"groupByNm": True},
+        )
+        task_id = task_data.get("data", {}).get("taskId")
+        if not task_id:
+            raise RuntimeError("Не удалось создать задачу отчёта об остатках")
+
+        for _ in range(30):
+            await asyncio.sleep(1)
+            status_data = await self._request(
+                "get", f"{ANALYTICS_API}/api/v1/warehouse_remains/tasks/{task_id}/status",
+            )
+            if status_data.get("data", {}).get("status") == "done":
+                break
+        else:
+            raise RuntimeError("Отчёт об остатках не сформировался за 30 сек")
+
+        data = await self._request(
+            "get", f"{ANALYTICS_API}/api/v1/warehouse_remains/tasks/{task_id}/download",
+        )
         return data if isinstance(data, list) else []
 
     async def get_orders(self, date_from: str | None = None, limit: int = 30) -> list[dict]:
@@ -97,8 +115,12 @@ class WbClient:
         return await self._request("post", f"{ANALYTICS_API}/api/analytics/v3/sales-funnel/products", json=payload)
 
     async def get_finance_report(self, date_from: str, date_to: str) -> list[dict]:
-        params = {"dateFrom": date_from, "dateTo": date_to}
-        data = await self._request("get", f"{STATISTICS_API}/api/v5/supplier/reportDetailByPeriod", params=params)
+        payload = {
+            "dateFrom": date_from,
+            "dateTo": date_to,
+            "period": "daily",
+        }
+        data = await self._request("post", f"{FINANCE_API}/api/finance/v1/sales-reports/detailed", json=payload)
         return data if isinstance(data, list) else []
 
     async def get_prices(self, nm_ids: list[int] | None = None) -> list[dict]:
