@@ -8,10 +8,10 @@ from bot.keyboards import products_menu, back_button, add_account_button
 router = Router()
 
 
-def _format_price(price: int | None) -> str:
+def _format_price(price: int | float | None) -> str:
     if price is None:
         return "—"
-    return f"{price / 100:,.2f} ₽"
+    return f"{price:,.2f} ₽"
 
 
 @router.callback_query(F.data == "menu_products")
