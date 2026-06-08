@@ -7,8 +7,8 @@ def filter_by_ignore_list(
     account: WbAccount,
     code_keys: str | list[str] = "vendorCode",
 ) -> list[dict]:
-    ignored = set(get_ignore_list(account))
-    if not ignored:
+    patterns = get_ignore_list(account)
+    if not patterns:
         return items
 
     if isinstance(code_keys, str):
@@ -17,8 +17,12 @@ def filter_by_ignore_list(
     def _is_ignored(item: dict) -> bool:
         for k in code_keys:
             val = item.get(k)
-            if val and val in ignored:
-                return True
+            if not val:
+                continue
+            val_lower = val.lower()
+            for p in patterns:
+                if val_lower == p.lower() or p.lower() in val_lower:
+                    return True
         return False
 
     return [i for i in items if not _is_ignored(i)]
