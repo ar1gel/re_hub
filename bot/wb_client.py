@@ -83,7 +83,7 @@ class WbClient:
         return data if isinstance(data, list) else []
 
     async def get_orders(self, date_from: str | None = None, limit: int = 30) -> list[dict]:
-        params = {"limit": limit}
+        params = {"limit": limit, "next": 0}
         if date_from:
             if date_from.replace("-", "").isdigit():
                 dt = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=MSK_TZ)
@@ -107,7 +107,7 @@ class WbClient:
         prev_end = start
         prev_start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
         payload = {
-            "currentPeriod": {"start": start, "end": end},
+            "selectedPeriod": {"start": start, "end": end},
             "pastPeriod": {"start": prev_start, "end": prev_end},
         }
         if nm_ids:

@@ -63,17 +63,25 @@ async def finances_report(callback: CallbackQuery) -> None:
         return
 
     total_orders = 0
-    total_sales = 0
-    total_commission = 0
-    total_logistics = 0
-    total_paid = 0
+    total_sales = 0.0
+    total_commission = 0.0
+    total_logistics = 0.0
+    total_paid = 0.0
 
-    for item in report:
-        total_orders += item.get("quantity", 0)
-        total_sales += item.get("retailAmount", 0)
-        total_commission += item.get("ppvzSalesCommission", 0)
-        total_logistics += item.get("deliveryService", 0)
-        total_paid += item.get("forPay", 0)
+    try:
+        for item in report:
+            total_orders += int(item.get("quantity", 0) or 0)
+            total_sales += float(item.get("retailAmount", 0) or 0)
+            total_commission += float(item.get("ppvzSalesCommission", 0) or 0)
+            total_logistics += float(item.get("deliveryService", 0) or 0)
+            total_paid += float(item.get("forPay", 0) or 0)
+    except Exception as e:
+        await callback.message.edit_text(
+            f"❌ Ошибка при обработке отчёта: {e}",
+            reply_markup=back_button(),
+        )
+        await callback.answer()
+        return
 
     text = (
         f"💰 <b>Отчёт по реализации</b>\n"

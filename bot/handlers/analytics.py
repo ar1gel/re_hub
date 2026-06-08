@@ -46,7 +46,7 @@ async def analytics_funnel(callback: CallbackQuery) -> None:
             return
 
     response_data = data.get("data", {}) if isinstance(data, dict) else {}
-    cards = response_data.get("cards", [])
+    products = response_data.get("products", [])
     statistics = response_data.get("statistics", {})
 
     text = "<b>📈 Воронка продаж</b>\n\n"
@@ -59,10 +59,11 @@ async def analytics_funnel(callback: CallbackQuery) -> None:
             f"✅ Выкупы: {statistics.get('buyouts', '—')}\n\n"
         )
 
-    if cards:
-        text += f"<b>По товарам ({len(cards)} шт.):</b>\n\n"
-        for card in cards[:5]:
-            name = card.get("cardName", "—")
+    if products:
+        text += f"<b>По товарам ({len(products)} шт.):</b>\n\n"
+        for product in products[:5]:
+            card = product.get("product", {}) if isinstance(product, dict) else {}
+            name = card.get("title", "—")
             text += f"• {name}\n"
     else:
         text += "Нет данных о товарах в отчёте.\n"
