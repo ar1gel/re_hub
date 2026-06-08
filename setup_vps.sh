@@ -9,18 +9,22 @@ NC='\033[0m'
 REPO_URL="https://github.com/ar1gel/re_hub.git"
 PROJECT_DIR="$HOME/re_hub"
 
-echo -e "${GREEN}📦 Установка зависимостей...${NC}"
-sudo apt-get update -qq
-sudo apt-get install -y docker.io git curl > /dev/null
-sudo apt-get install -y docker-compose-v2 2>/dev/null || sudo apt-get install -y docker-compose > /dev/null
-
 if ! command -v docker &>/dev/null; then
-  echo -e "${RED}❌ Docker не установился. Установи вручную: https://docs.docker.com/engine/install/ubuntu/${NC}"
-  exit 1
+  echo -e "${GREEN}📦 Установка Docker через официальный скрипт...${NC}"
+  curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  sudo sh /tmp/get-docker.sh
+  echo -e "${GREEN}✅ Docker установлен: $(docker --version)${NC}"
+else
+  echo -e "${GREEN}✅ Docker уже установлен: $(docker --version)${NC}"
 fi
 
-echo -e "${GREEN}✅ Docker установлен.${NC}"
 sudo systemctl enable docker --now 2>/dev/null || true
+
+if ! command -v git &>/dev/null; then
+  echo -e "${GREEN}📦 Установка Git...${NC}"
+  sudo apt-get update -qq
+  sudo apt-get install -y git -qq
+fi
 
 if [ -d "$PROJECT_DIR" ]; then
   echo -e "${GREEN}🔄 Обновляю код...${NC}"
@@ -34,13 +38,19 @@ fi
 
 if [ ! -f .env ]; then
   cp .env.example .env
-  echo -e "${YELLOW}⚠️  Создан файл .env. Укажи BOT_TOKEN:${NC}"
+  echo ""
+  echo -e "${YELLOW}════════════════════════════════════════${NC}"
+  echo -e "${YELLOW}⚠️  Файл .env создан. Укажи BOT_TOKEN:${NC}"
   echo -e "${YELLOW}   nano .env${NC}"
-  exit 1
+  echo -e "${YELLOW}   Затем запусти: sudo docker compose up -d${NC}"
+  echo -e "${YELLOW}════════════════════════════════════════${NC}"
+  exit 0
 fi
 
-echo -e "${GREEN}🔨 Собираю и запускаю...${NC}"
+echo -e "${GREEN}🔨 Собираю образ...${NC}"
 sudo docker compose build
+
+echo -e "${GREEN}🚀 Запускаю контейнер...${NC}"
 sudo docker compose up -d
 
 echo ""
