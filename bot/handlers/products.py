@@ -154,9 +154,13 @@ async def products_prices(callback: CallbackQuery) -> None:
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
     for price in prices[:10]:
-        nm_id = price.get("nmId", "—")
-        current = price.get("price", 0)
-        discounted = price.get("discountedPrice", current)
+        nm_id = price.get("nmID", "—")
+        sizes = price.get("sizes", [])
+        if sizes:
+            current = sizes[0].get("price", 0)
+            discounted = sizes[0].get("discountedPrice", current)
+        else:
+            current = discounted = 0
         text += f"• nmID: {nm_id}\n"
         text += f"  Цена: {_format_price(current)}\n"
         text += f"  Со скидкой: {_format_price(discounted)}\n\n"

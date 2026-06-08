@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from aiohttp import ClientSession
 
 from wb_api.async_api import AsyncAPI
@@ -11,6 +13,8 @@ MARKETPLACE_API = "https://marketplace-api.wildberries.ru"
 ANALYTICS_API = "https://seller-analytics-api.wildberries.ru"
 FINANCE_API = "https://finance-api.wildberries.ru"
 STATISTICS_API = "https://statistics-api.wildberries.ru"
+
+MSK_TZ = timezone(timedelta(hours=3))
 
 
 class WbClient:
@@ -53,29 +57,43 @@ class WbClient:
         payload = {"settings": {"cursor": {"limit": 30}, "filter": {"withPhoto": -1}}}
         return await self._request("post", f"{CONTENT_API}/content/v2/get/cards/list", json=payload)
 
-    async def get_product_stocks(self, nm_ids: list[int] | None = None) -> list[dict]:
-        params = {}
-        if nm_ids:
-            params["nmIDs"] = nm_ids
-        data = await self._request("get", f"{STATISTICS_API}/api/v3/stocks", params=params)
-        return data if isinstance(data, list) else data.get("stocks", [])
+    async def get_product_stocks(self, date_from: str | None = None) -> list[dict]:
+        if date_from is None:
+            date_from = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+        params = {"dateFrom": date_from}
+        data = await self._request("get", f"{STATISTICS_API}/api/v1/supplier/stocks", params=params)
+        return data if isinstance(data, list) else []
 
     async def get_orders(self, date_from: str | None = None, limit: int = 30) -> list[dict]:
         params = {"limit": limit}
         if date_from:
-            params["dateFrom"] = date_from
+            if date_from.replace("-", "").isdigit():
+                dt = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=MSK_TZ)
+                params["dateFrom"] = int(dt.timestamp())
+            else:
+                params["dateFrom"] = date_from
         data = await self._request("get", f"{MARKETPLACE_API}/api/v3/orders", params=params)
+        return data if isinstance(data, list) else data.get("orders", [])
+
+    async def get_sales(self, date_from: str | None = None) -> list[dict]:
+        if date_from is None:
+            date_from = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        params = {"dateFrom": date_from, "flag": 1}
+        data = await self._request("get", f"{STATISTICS_API}/api/v1/supplier/sales", params=params)
         return data if isinstance(data, list) else []
 
-    async def get_sales(self, date_from: str | None = None, limit: int = 30) -> list[dict]:
-        params = {"limit": limit, "flag": 1}
-        if date_from:
-            params["dateFrom"] = date_from
-        data = await self._request("get", f"{STATISTICS_API}/api/v3/sales", params=params)
-        return data if isinstance(data, list) else []
-
-    async def get_sales_funnel(self, nm_ids: list[int]) -> dict:
-        payload = {"nmIDs": nm_ids}
+    async def get_sales_funnel(self, nm_ids: list[int] | None = None) -> dict:
+        today = datetime.now()
+        end = today.strftime("%Y-%m-%d")
+        start = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+        prev_end = start
+        prev_start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+        payload = {
+            "currentPeriod": {"start": start, "end": end},
+            "pastPeriod": {"start": prev_start, "end": prev_end},
+        }
+        if nm_ids:
+            payload["nmIDs"] = nm_ids
         return await self._request("post", f"{ANALYTICS_API}/api/analytics/v3/sales-funnel/products", json=payload)
 
     async def get_finance_report(self, date_from: str, date_to: str) -> list[dict]:
@@ -84,8 +102,11 @@ class WbClient:
         return data if isinstance(data, list) else []
 
     async def get_prices(self, nm_ids: list[int] | None = None) -> list[dict]:
-        params = {}
         if nm_ids:
-            params["nmIDs"] = nm_ids
-        data = await self._request("get", f"{DISCOUNTS_PRICES_API}/api/v3/prices", params=params)
-        return data if isinstance(data, list) else []
+            payload = {"nmList": nm_ids}
+            data = await self._request("post", f"{DISCOUNTS_PRICES_API}/api/v2/list/goods/filter", json=payload)
+        else:
+            data = await self._request("get", f"{DISCOUNTS_PRICES_API}/api/v2/list/goods/filter", params={"limit": 100, "offset": 0})
+        if isinstance(data, dict):
+            return data.get("data", {}).get("listGoods", [])
+        return []

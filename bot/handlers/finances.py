@@ -71,9 +71,9 @@ async def finances_report(callback: CallbackQuery) -> None:
     for item in report:
         total_orders += item.get("quantity", 0)
         total_sales += item.get("retailAmount", 0)
-        total_commission += item.get("commissionAmount", 0)
-        total_logistics += item.get("logisticsAmount", 0)
-        total_paid += item.get("paidAmount", 0)
+        total_commission += item.get("ppvzSalesCommission", 0)
+        total_logistics += item.get("deliveryService", 0)
+        total_paid += item.get("forPay", 0)
 
     text = (
         f"💰 <b>Отчёт по реализации</b>\n"
