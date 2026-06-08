@@ -22,8 +22,6 @@ else
   cd "$PROJECT_DIR"
 fi
 
-cd wb_telegram_bot
-
 if [ ! -f .env ]; then
   cp .env.example .env
   echo -e "${YELLOW}⚠️  Файл .env создан. Отредактируй его: nano .env${NC}"
@@ -36,6 +34,6 @@ sudo docker compose build
 sudo docker compose up -d
 
 echo -e "${GREEN}✅ Бот запущен!${NC}"
-echo -e "${GREEN}📋 Логи: cd $PROJECT_DIR/wb_telegram_bot && sudo docker compose logs -f${NC}"
-echo -e "${GREEN}🛑 Остановить: cd $PROJECT_DIR/wb_telegram_bot && sudo docker compose down${NC}"
-echo -e "${GREEN}🔄 Обновить: cd $PROJECT_DIR && git pull && cd wb_telegram_bot && sudo docker compose up -d --build${NC}"
+echo -e "${GREEN}📋 Логи: cd $PROJECT_DIR && sudo docker compose logs -f${NC}"
+echo -e "${GREEN}🛑 Остановить: cd $PROJECT_DIR && sudo docker compose down${NC}"
+echo -e "${GREEN}🔄 Обновить: cd $PROJECT_DIR && git pull && sudo docker compose up -d --build${NC}"

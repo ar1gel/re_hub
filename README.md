@@ -18,7 +18,7 @@ Telegram-бот для работы с API Wildberries: товары, заказ
 
 ```bash
 git clone https://github.com/ar1gel/re_hub.git
-cd re_hub/wb_telegram_bot
+cd re_hub
 
 # Виртуальное окружение
 python3 -m venv .venv
@@ -51,21 +51,21 @@ docker compose logs -f
 ssh user@ваш-сервер
 
 # Скрипт установит Docker и скачает проект:
-bash <(curl -s https://raw.githubusercontent.com/ar1gel/re_hub/master/wb_telegram_bot/setup_vps.sh)
+bash <(curl -s https://raw.githubusercontent.com/ar1gel/re_hub/master/setup_vps.sh)
 
 # После создания .env — укажи токен бота:
-nano re_hub/wb_telegram_bot/.env
+nano re_hub/.env
 
 # Запусти бота:
-cd re_hub/wb_telegram_bot && sudo docker compose up -d
+cd re_hub && sudo docker compose up -d
 ```
 
 ### Обновление после изменений в коде
 
 ```bash
-./re_hub/wb_telegram_bot/update_vps.sh
+./re_hub/update_vps.sh
 # или:
-bash <(curl -s https://raw.githubusercontent.com/ar1gel/re_hub/master/wb_telegram_bot/update_vps.sh)
+bash <(curl -s https://raw.githubusercontent.com/ar1gel/re_hub/master/update_vps.sh)
 ```
 
 Скрипт выполнит `git pull`, пересоберёт Docker-образ и перезапустит контейнер.

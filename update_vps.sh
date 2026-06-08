@@ -19,7 +19,6 @@ cd "$PROJECT_DIR"
 git pull
 
 echo -e "${GREEN}🔨 Пересобираю и запускаю контейнер...${NC}"
-cd wb_telegram_bot
 sudo docker compose up -d --build
 
 echo -e "${GREEN}✅ Готово!${NC}"
