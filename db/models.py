@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, Integer, BigInteger, DateTime, func
+from sqlalchemy import String, Boolean, Integer, BigInteger, DateTime, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -25,5 +25,6 @@ class WbAccount(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     token: Mapped[str] = mapped_column(String(512), nullable=False)
+    ignore_list: Mapped[str] = mapped_column(Text, default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

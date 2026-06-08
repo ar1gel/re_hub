@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import orders_menu, back_button, add_account_button
+from bot.utils import filter_by_ignore_list
 
 router = Router()
 
@@ -22,7 +23,7 @@ def _fmt_orders(orders: list, title: str) -> str:
         status = order.get("wbStatus", "—")
         text += (
             f"• <b>Артикул:</b> {art}\n"
-            f"  Кол-во: {qty}, Сумма: {total / 100:,.2f} ₽\n"
+            f"  Кол-во: {qty}, Сумма: {total:,.2f} ₽\n"
             f"  Статус: {status}\n\n"
         )
     if len(orders) > 10:
@@ -68,6 +69,7 @@ async def orders_new(callback: CallbackQuery) -> None:
             await callback.answer()
             return
 
+    orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
     text = _fmt_orders(orders, "📥 <b>Новые заказы</b>")
     await callback.message.edit_text(text, reply_markup=back_button())
     await callback.answer()
@@ -102,6 +104,7 @@ async def orders_sales(callback: CallbackQuery) -> None:
             await callback.answer()
             return
 
+    sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])
     text = _fmt_orders(sales, "📤 <b>Продажи</b>")
     await callback.message.edit_text(text, reply_markup=back_button())
     await callback.answer()

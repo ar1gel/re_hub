@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,3 +52,25 @@ async def delete_account(session: AsyncSession, account_id: int, tg_id: int) -> 
     account.is_active = False
     await session.commit()
     return True
+
+
+def get_ignore_list(account: WbAccount) -> list[str]:
+    if not account.ignore_list:
+        return []
+    return json.loads(account.ignore_list)
+
+
+async def add_to_ignore(session: AsyncSession, account: WbAccount, vendor_code: str) -> None:
+    items = get_ignore_list(account)
+    if vendor_code not in items:
+        items.append(vendor_code)
+        account.ignore_list = json.dumps(items)
+        await session.commit()
+
+
+async def remove_from_ignore(session: AsyncSession, account: WbAccount, vendor_code: str) -> None:
+    items = get_ignore_list(account)
+    if vendor_code in items:
+        items.remove(vendor_code)
+        account.ignore_list = json.dumps(items)
+        await session.commit()

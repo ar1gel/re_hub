@@ -5,8 +5,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery
 
 from db.engine import get_session
-from db.repository import get_or_create_user, get_accounts, get_account_by_id, add_account, delete_account
-from bot.keyboards import accounts_menu, account_actions, cancel_button, main_menu, back_button
+from db.repository import get_or_create_user, get_accounts, get_account_by_id, add_account, delete_account, get_ignore_list, add_to_ignore, remove_from_ignore
+from bot.keyboards import accounts_menu, account_actions, ignore_list_menu, cancel_button, main_menu, back_button
 from bot.wb_client import WbClient
 
 router = Router()
@@ -15,6 +15,10 @@ router = Router()
 class AccountAdd(StatesGroup):
     name = State()
     token = State()
+
+
+class IgnoreAdd(StatesGroup):
+    vendor_code = State()
 
 
 @router.callback_query(F.data == "menu_accounts")
@@ -169,4 +173,81 @@ async def account_delete_confirm(callback: CallbackQuery) -> None:
             reply_markup=back_button(),
         )
 
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("account_ignore:"))
+async def account_ignore_list(callback: CallbackQuery) -> None:
+    account_id = int(callback.data.split(":")[1])
+    async with get_session() as session:
+        account = await get_account_by_id(session, account_id, callback.from_user.id)
+
+    if account is None:
+        await callback.message.edit_text("❌ Аккаунт не найден.", reply_markup=back_button())
+        await callback.answer()
+        return
+
+    items = get_ignore_list(account)
+    if items:
+        text = (
+            f"🚫 <b>Игнор-лист: {account.name}</b>\n\n"
+            "Эти артикулы не будут показываться в боте:\n"
+        )
+        for vc in items:
+            text += f"• {vc}\n"
+    else:
+        text = f"🚫 <b>Игнор-лист: {account.name}</b>\n\nИгнор-лист пуст."
+
+    await callback.message.edit_text(text, reply_markup=ignore_list_menu(account_id, items))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("ignore_add:"))
+async def ignore_add_start(callback: CallbackQuery, state: FSMContext) -> None:
+    account_id = int(callback.data.split(":")[1])
+    await state.update_data(account_id=account_id)
+    await callback.message.edit_text(
+        "✏️ Введи vendorCode (артикул продавца), который нужно скрыть:",
+        reply_markup=cancel_button(),
+    )
+    await state.set_state(IgnoreAdd.vendor_code)
+    await callback.answer()
+
+
+@router.message(StateFilter(IgnoreAdd.vendor_code))
+async def ignore_add_vendor(message: Message, state: FSMContext) -> None:
+    vc = message.text.strip()
+    if not vc:
+        await message.answer("❌ Артикул не может быть пустым. Попробуй снова:")
+        return
+
+    data = await state.get_data()
+    account_id = data["account_id"]
+
+    async with get_session() as session:
+        account = await get_account_by_id(session, account_id, message.from_user.id)
+        if account:
+            await add_to_ignore(session, account, vc)
+
+    await state.clear()
+    await message.answer(f"✅ Артикул <b>{vc}</b> добавлен в игнор-лист.", reply_markup=back_button())
+
+
+@router.callback_query(F.data.startswith("ignore_del:"))
+async def ignore_del_vendor(callback: CallbackQuery) -> None:
+    _, _, account_id, vc = callback.data.split(":", 3)
+    account_id = int(account_id)
+
+    async with get_session() as session:
+        account = await get_account_by_id(session, account_id, callback.from_user.id)
+        if account:
+            await remove_from_ignore(session, account, vc)
+
+    items = get_ignore_list(account) if account else []
+    text = (
+        f"🚫 <b>Игнор-лист: {account.name}</b>\n\n"
+        f"❌ Артикул <b>{vc}</b> удалён из игнор-листа.\n\n"
+        + ("\n".join(f"• {x}" for x in items) if items else "Игнор-лист пуст.")
+    )
+    await callback.message.edit_text(text, reply_markup=ignore_list_menu(account_id, items))
     await callback.answer()

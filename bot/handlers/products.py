@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import products_menu, back_button, add_account_button
+from bot.utils import filter_by_ignore_list
 
 router = Router()
 
@@ -51,6 +52,7 @@ async def products_list(callback: CallbackQuery) -> None:
             return
 
     cards = data.get("cards", []) if isinstance(data, dict) else []
+    cards = filter_by_ignore_list(cards, account)
     if not cards:
         await callback.message.edit_text("📭 Товары не найдены.", reply_markup=back_button())
         await callback.answer()
@@ -99,6 +101,7 @@ async def products_stocks(callback: CallbackQuery) -> None:
             await callback.answer()
             return
 
+    stocks = filter_by_ignore_list(stocks, account)
     if not stocks:
         await callback.message.edit_text("📭 Остатки не найдены.", reply_markup=back_button())
         await callback.answer()
@@ -148,6 +151,7 @@ async def products_prices(callback: CallbackQuery) -> None:
             await callback.answer()
             return
 
+    prices = filter_by_ignore_list(prices, account)
     if not prices:
         await callback.message.edit_text("📭 Цены не найдены.", reply_markup=back_button())
         await callback.answer()

@@ -36,9 +36,25 @@ def account_actions(account_id: int, account_name: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="ℹ️ Информация", callback_data=f"account_info:{account_id}"),
+        InlineKeyboardButton(text="🚫 Игнор-лист", callback_data=f"account_ignore:{account_id}"),
+    )
+    builder.row(
         InlineKeyboardButton(text="❌ Удалить", callback_data=f"account_delete:{account_id}"),
     )
     builder.row(InlineKeyboardButton(text="🔙 К списку", callback_data="menu_accounts"))
+    return builder.as_markup()
+
+
+def ignore_list_menu(account_id: int, items: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for vc in items[:10]:
+        builder.row(InlineKeyboardButton(text=f"❌ {vc}", callback_data=f"ignore_del:{account_id}:{vc}"))
+    builder.row(
+        InlineKeyboardButton(text="➕ Добавить", callback_data=f"ignore_add:{account_id}"),
+    )
+    builder.row(
+        InlineKeyboardButton(text="🔙 Назад", callback_data=f"account_select:{account_id}"),
+    )
     return builder.as_markup()
 
 
