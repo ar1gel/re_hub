@@ -1,10 +1,11 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message
 
 from db.engine import get_session
 from db.repository import get_accounts
-from bot.keyboards import products_menu, back_button, add_account_button
+from bot.keyboards import products_kb, main_kb
 from bot.utils import filter_by_ignore_list
+from bot.menu import set_menu
 
 router = Router()
 
@@ -15,26 +16,17 @@ def _format_price(price: int | float | None) -> str:
     return f"{price:,.2f} ₽"
 
 
-@router.callback_query(F.data == "menu_products")
-async def menu_products(callback: CallbackQuery) -> None:
-    await callback.message.edit_text(
-        "📦 <b>Товары</b>\n\nВыбери действие:",
-        reply_markup=products_menu(),
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data == "products_list")
-async def products_list(callback: CallbackQuery) -> None:
+@router.message(F.text == "📋 Список товаров")
+async def products_list(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -44,18 +36,13 @@ async def products_list(callback: CallbackQuery) -> None:
         try:
             data = await client.get_products_list()
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка при получении товаров: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
             return
 
     cards = data.get("cards", []) if isinstance(data, dict) else []
     cards = filter_by_ignore_list(cards, account)
     if not cards:
-        await callback.message.edit_text("📭 Товары не найдены.", reply_markup=back_button())
-        await callback.answer()
+        await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
         return
 
     text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
@@ -70,21 +57,20 @@ async def products_list(callback: CallbackQuery) -> None:
     if len(cards) > 10:
         text += f"…и ещё {len(cards) - 10} товаров.\n"
 
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=products_kb())
 
 
-@router.callback_query(F.data == "products_stocks")
-async def products_stocks(callback: CallbackQuery) -> None:
+@router.message(F.text == "📦 Остатки")
+async def products_stocks(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -94,17 +80,12 @@ async def products_stocks(callback: CallbackQuery) -> None:
         try:
             stocks = await client.get_product_stocks()
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
             return
 
     stocks = filter_by_ignore_list(stocks, account)
     if not stocks:
-        await callback.message.edit_text("📭 Остатки не найдены.", reply_markup=back_button())
-        await callback.answer()
+        await message.answer("📭 Остатки не найдены.", reply_markup=products_kb())
         return
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
@@ -120,21 +101,20 @@ async def products_stocks(callback: CallbackQuery) -> None:
     if len(stocks) > 10:
         text += f"…и ещё {len(stocks) - 10}.\n"
 
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=products_kb())
 
 
-@router.callback_query(F.data == "products_prices")
-async def products_prices(callback: CallbackQuery) -> None:
+@router.message(F.text == "💰 Цены")
+async def products_prices(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -144,17 +124,12 @@ async def products_prices(callback: CallbackQuery) -> None:
         try:
             prices = await client.get_prices()
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
             return
 
     prices = filter_by_ignore_list(prices, account)
     if not prices:
-        await callback.message.edit_text("📭 Цены не найдены.", reply_markup=back_button())
-        await callback.answer()
+        await message.answer("📭 Цены не найдены.", reply_markup=products_kb())
         return
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
@@ -173,5 +148,4 @@ async def products_prices(callback: CallbackQuery) -> None:
     if len(prices) > 10:
         text += f"…и ещё {len(prices) - 10}.\n"
 
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=products_kb())

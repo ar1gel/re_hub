@@ -1,33 +1,25 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import Message
 
 from db.engine import get_session
 from db.repository import get_accounts
-from bot.keyboards import analytics_menu, back_button, add_account_button
+from bot.keyboards import analytics_kb, main_kb
+from bot.menu import set_menu
 
 router = Router()
 
 
-@router.callback_query(F.data == "menu_analytics")
-async def menu_analytics(callback: CallbackQuery) -> None:
-    await callback.message.edit_text(
-        "📊 <b>Аналитика</b>\n\nВыбери действие:",
-        reply_markup=analytics_menu(),
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data == "analytics_funnel")
-async def analytics_funnel(callback: CallbackQuery) -> None:
+@router.message(F.text == "📈 Воронка продаж")
+async def analytics_funnel(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -38,11 +30,7 @@ async def analytics_funnel(callback: CallbackQuery) -> None:
         try:
             data = await client.get_sales_funnel(nm_ids=[])
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=analytics_kb())
             return
 
     response_data = data.get("data", {}) if isinstance(data, dict) else {}
@@ -68,5 +56,4 @@ async def analytics_funnel(callback: CallbackQuery) -> None:
     else:
         text += "Нет данных о товарах в отчёте.\n"
 
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=analytics_kb())

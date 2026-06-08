@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import Message
 
 from db.engine import get_session
 from db.repository import get_accounts
-from bot.keyboards import orders_menu, back_button, add_account_button
+from bot.keyboards import orders_kb, main_kb
 from bot.utils import filter_by_ignore_list
+from bot.menu import set_menu
 
 router = Router()
 
@@ -31,26 +32,17 @@ def _fmt_orders(orders: list, title: str) -> str:
     return text
 
 
-@router.callback_query(F.data == "menu_orders")
-async def menu_orders(callback: CallbackQuery) -> None:
-    await callback.message.edit_text(
-        "📋 <b>Заказы</b>\n\nВыбери действие:",
-        reply_markup=orders_menu(),
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data == "orders_new")
-async def orders_new(callback: CallbackQuery) -> None:
+@router.message(F.text == "📥 Новые заказы")
+async def orders_new(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -62,30 +54,25 @@ async def orders_new(callback: CallbackQuery) -> None:
         try:
             orders = await client.get_orders(date_from=date_from)
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=orders_kb())
             return
 
     orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
     text = _fmt_orders(orders, "📥 <b>Новые заказы</b>")
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=orders_kb())
 
 
-@router.callback_query(F.data == "orders_sales")
-async def orders_sales(callback: CallbackQuery) -> None:
+@router.message(F.text == "📤 Продажи")
+async def orders_sales(message: Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, message.from_user.id)
 
     if not accounts:
-        await callback.message.edit_text(
-            "❌ Сначала добавь аккаунт WB.",
-            reply_markup=add_account_button(),
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(),
         )
-        await callback.answer()
+        set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
@@ -97,14 +84,9 @@ async def orders_sales(callback: CallbackQuery) -> None:
         try:
             sales = await client.get_sales(date_from=date_from)
         except Exception as e:
-            await callback.message.edit_text(
-                f"❌ Ошибка: {e}",
-                reply_markup=back_button(),
-            )
-            await callback.answer()
+            await message.answer(f"❌ Ошибка: {e}", reply_markup=orders_kb())
             return
 
     sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])
     text = _fmt_orders(sales, "📤 <b>Продажи</b>")
-    await callback.message.edit_text(text, reply_markup=back_button())
-    await callback.answer()
+    await message.answer(text, reply_markup=orders_kb())
