@@ -49,7 +49,7 @@ async def analytics_funnel(message: Message) -> None:
 
     if products:
         text += f"<b>По товарам ({len(products)} шт.):</b>\n\n"
-        for product in products[:5]:
+        for product in products:
             card = product.get("product", {}) if isinstance(product, dict) else {}
             name = card.get("title", "—")
             text += f"• {name}\n"

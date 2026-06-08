@@ -46,16 +46,13 @@ async def products_list(message: Message) -> None:
         return
 
     text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
-    for card in cards[:10]:
+    for card in cards:
         vendor = card.get("vendorCode", "—")
         brand = card.get("brand", "—")
         name = card.get("title", "—")
         text += f"• <b>{name}</b>\n"
         text += f"  Артикул: {vendor}\n"
         text += f"  Бренд: {brand}\n\n"
-
-    if len(cards) > 10:
-        text += f"…и ещё {len(cards) - 10} товаров.\n"
 
     await message.answer(text, reply_markup=products_kb())
 
@@ -89,17 +86,14 @@ async def products_stocks(message: Message) -> None:
         return
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
-    for stock in stocks[:10]:
+    for stock in stocks:
         vendor = stock.get("vendorCode", "—")
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
         text += f"• {vendor}\n"
         text += f"  Всего: {total} шт.\n"
-        for w in warehouses[:3]:
+        for w in warehouses:
             text += f"    {w.get('warehouseName', '—')}: {w.get('quantity', 0)} шт.\n"
-
-    if len(stocks) > 10:
-        text += f"…и ещё {len(stocks) - 10}.\n"
 
     await message.answer(text, reply_markup=products_kb())
 
@@ -133,7 +127,7 @@ async def products_prices(message: Message) -> None:
         return
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
-    for price in prices[:10]:
+    for price in prices:
         vendor = price.get("vendorCode", "—")
         sizes = price.get("sizes", [])
         if sizes:
@@ -144,8 +138,5 @@ async def products_prices(message: Message) -> None:
         text += f"• {vendor}\n"
         text += f"  Цена: {_format_price(current)}\n"
         text += f"  Со скидкой: {_format_price(discounted)}\n\n"
-
-    if len(prices) > 10:
-        text += f"…и ещё {len(prices) - 10}.\n"
 
     await message.answer(text, reply_markup=products_kb())

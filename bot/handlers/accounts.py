@@ -149,10 +149,8 @@ async def account_ignore_list(message: Message) -> None:
             f"🚫 <b>Игнор-лист: {account.name}</b>\n\n"
             "Эти артикулы не показываются:\n"
         )
-        for vc in items[:15]:
+        for vc in items:
             text += f"• {vc}\n"
-        if len(items) > 15:
-            text += f"…и ещё {len(items) - 15}\n"
         text += "\nЧтобы удалить артикул, отправь ❌ vendorCode"
     else:
         text = f"🚫 <b>Игнор-лист: {account.name}</b>\n\nИгнор-лист пуст."

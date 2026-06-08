@@ -17,7 +17,7 @@ def _fmt_orders(orders: list, title: str) -> str:
         return f"📭 {title}: нет данных."
 
     text = f"{title} ({len(orders)} шт.)\n\n"
-    for order in orders[:10]:
+    for order in orders:
         art = order.get("vendorCode") or order.get("supplierArticle", "—")
         qty = order.get("quantity", 0)
         total = order.get("totalPrice") or 0
@@ -27,8 +27,6 @@ def _fmt_orders(orders: list, title: str) -> str:
             f"  Кол-во: {qty}, Сумма: {total:,.2f} ₽\n"
             f"  Статус: {status}\n\n"
         )
-    if len(orders) > 10:
-        text += f"…и ещё {len(orders) - 10}.\n"
     return text
 
 
