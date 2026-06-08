@@ -1,3 +1,5 @@
+from html import escape as h
+
 from aiogram import Router, F
 from aiogram.types import Message
 
@@ -51,7 +53,7 @@ async def analytics_funnel(message: Message) -> None:
         text += f"<b>По товарам ({len(products)} шт.):</b>\n\n"
         for product in products:
             card = product.get("product", {}) if isinstance(product, dict) else {}
-            name = card.get("title", "—")
+            name = h(card.get("title", "—"))
             text += f"• {name}\n"
     else:
         text += "Нет данных о товарах в отчёте.\n"

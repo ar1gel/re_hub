@@ -1,3 +1,5 @@
+from html import escape as h
+
 from aiogram import Router, F
 from aiogram.types import Message
 
@@ -47,9 +49,9 @@ async def products_list(message: Message) -> None:
 
     text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
     for card in cards:
-        vendor = card.get("vendorCode", "—")
-        brand = card.get("brand", "—")
-        name = card.get("title", "—")
+        vendor = h(card.get("vendorCode", "—"))
+        brand = h(card.get("brand", "—"))
+        name = h(card.get("title", "—"))
         text += f"• <b>{name}</b>\n"
         text += f"  Артикул: {vendor}\n"
         text += f"  Бренд: {brand}\n\n"
@@ -87,13 +89,13 @@ async def products_stocks(message: Message) -> None:
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
     for stock in stocks:
-        vendor = stock.get("vendorCode", "—")
+        vendor = h(stock.get("vendorCode", "—"))
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
         text += f"• {vendor}\n"
         text += f"  Всего: {total} шт.\n"
         for w in warehouses:
-            text += f"    {w.get('warehouseName', '—')}: {w.get('quantity', 0)} шт.\n"
+            text += f"    {h(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
 
     await message.answer(text, reply_markup=products_kb())
 
@@ -128,7 +130,7 @@ async def products_prices(message: Message) -> None:
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
     for price in prices:
-        vendor = price.get("vendorCode", "—")
+        vendor = h(price.get("vendorCode", "—"))
         sizes = price.get("sizes", [])
         if sizes:
             current = sizes[0].get("price", 0)

@@ -1,3 +1,5 @@
+from html import escape as h
+
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -36,7 +38,7 @@ async def show_accounts_list(tg_id: int, target: Message) -> None:
     else:
         text = "🔑 <b>Твои аккаунты WB:</b>\n\n"
         for i, acc in enumerate(accounts, 1):
-            text += f"{i}. <b>{acc.name}</b>\n"
+            text += f"{i}. <b>{h(acc.name)}</b>\n"
         await target.answer(text, reply_markup=accounts_list_kb(accounts))
     set_menu(tg_id, "accounts")
 
@@ -63,9 +65,9 @@ async def account_select_by_name(message: Message) -> None:
     account_id, account = result
     set_account(message.from_user.id, account_id)
     await message.answer(
-        f"🔑 <b>Аккаунт: {account.name}</b>\n\n"
+        f"🔑 <b>Аккаунт: {h(account.name)}</b>\n\n"
         f"ID: {account.id}\n"
-        f"Токен: {account.token[:8]}...{account.token[-4:]}",
+        f"Токен: {h(account.token[:8])}...{h(account.token[-4:])}",
         reply_markup=account_actions_kb(),
     )
     set_menu(message.from_user.id, "account_actions")
@@ -101,11 +103,11 @@ async def account_info(message: Message) -> None:
 
     text = (
         f"ℹ️ <b>Информация об аккаунте</b>\n\n"
-        f"Название: {account.name}\n"
-        f"Продавец: {info.get('name', '—')}\n"
-        f"Торговая марка: {info.get('tradeMark', '—')}\n"
-        f"ИНН: {info.get('tin', '—')}\n"
-        f"SID: {info.get('sid', '—')}"
+        f"Название: {h(account.name)}\n"
+        f"Продавец: {h(info.get('name', '—'))}\n"
+        f"Торговая марка: {h(info.get('tradeMark', '—'))}\n"
+        f"ИНН: {h(info.get('tin', '—'))}\n"
+        f"SID: {h(info.get('sid', '—'))}"
     )
     await message.answer(text, reply_markup=account_actions_kb())
 
@@ -146,14 +148,14 @@ async def account_ignore_list(message: Message) -> None:
     items = get_ignore_list(account)
     if items:
         text = (
-            f"🚫 <b>Игнор-лист: {account.name}</b>\n\n"
+            f"🚫 <b>Игнор-лист: {h(account.name)}</b>\n\n"
             "Эти артикулы не показываются:\n"
         )
         for vc in items:
             text += f"• {vc}\n"
         text += "\nЧтобы удалить артикул, отправь ❌ vendorCode"
     else:
-        text = f"🚫 <b>Игнор-лист: {account.name}</b>\n\nИгнор-лист пуст."
+        text = f"🚫 <b>Игнор-лист: {h(account.name)}</b>\n\nИгнор-лист пуст."
 
     await message.answer(text, reply_markup=ignore_list_kb())
     set_menu(message.from_user.id, "ignore_list")
