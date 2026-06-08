@@ -1,5 +1,5 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
 def main_menu() -> InlineKeyboardMarkup:
@@ -116,3 +116,20 @@ def add_account_button() -> InlineKeyboardMarkup:
     builder.row(InlineKeyboardButton(text="🔑 Добавить аккаунт", callback_data="account_add"))
     builder.row(InlineKeyboardButton(text="🔙 Главное меню", callback_data="back_main"))
     return builder.as_markup()
+
+
+def main_reply_kb() -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        KeyboardButton(text="📦 Товары"),
+        KeyboardButton(text="📋 Заказы"),
+    )
+    builder.row(
+        KeyboardButton(text="📊 Аналитика"),
+        KeyboardButton(text="💰 Финансы"),
+    )
+    builder.row(
+        KeyboardButton(text="🔑 Аккаунты"),
+        KeyboardButton(text="❓ Помощь"),
+    )
+    return builder.as_markup(resize_keyboard=True)

@@ -21,23 +21,32 @@ class IgnoreAdd(StatesGroup):
     vendor_code = State()
 
 
-@router.callback_query(F.data == "menu_accounts")
-async def menu_accounts(callback: CallbackQuery) -> None:
+async def _show_accounts(tg_id: int, edit_or_send: CallbackQuery | Message) -> None:
     async with get_session() as session:
-        accounts = await get_accounts(session, callback.from_user.id)
+        accounts = await get_accounts(session, tg_id)
 
     if not accounts:
-        await callback.message.edit_text(
+        text = (
             "🔑 <b>Аккаунты WB</b>\n\n"
             "У тебя пока нет добавленных аккаунтов.\n"
-            "Нажми «Добавить аккаунт», чтобы добавить токен WB API.",
-            reply_markup=accounts_menu([]),
+            "Нажми «Добавить аккаунт», чтобы добавить токен WB API."
         )
+        kb = accounts_menu([])
     else:
         text = "🔑 <b>Твои аккаунты WB:</b>\n\n"
         for i, acc in enumerate(accounts, 1):
             text += f"{i}. <b>{acc.name}</b> (id: {acc.id})\n"
-        await callback.message.edit_text(text, reply_markup=accounts_menu(accounts))
+        kb = accounts_menu(accounts)
+
+    if isinstance(edit_or_send, CallbackQuery):
+        await edit_or_send.message.edit_text(text, reply_markup=kb)
+    else:
+        await edit_or_send.answer(text, reply_markup=kb)
+
+
+@router.callback_query(F.data == "menu_accounts")
+async def menu_accounts(callback: CallbackQuery) -> None:
+    await _show_accounts(callback.from_user.id, callback)
     await callback.answer()
 
 
