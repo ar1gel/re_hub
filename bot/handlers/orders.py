@@ -16,13 +16,12 @@ def _fmt_orders(orders: list, title: str) -> str:
 
     text = f"{title} ({len(orders)} шт.)\n\n"
     for order in orders[:10]:
-        nm_id = order.get("nmId", "—")
         art = order.get("vendorCode") or order.get("supplierArticle", "—")
         qty = order.get("quantity", 0)
         total = order.get("totalPrice") or order.get("finishedPrice", 0)
         status = order.get("wbStatus", "—")
         text += (
-            f"• <b>Артикул:</b> {art} (nmID: {nm_id})\n"
+            f"• <b>Артикул:</b> {art}\n"
             f"  Кол-во: {qty}, Сумма: {total / 100:,.2f} ₽\n"
             f"  Статус: {status}\n\n"
         )

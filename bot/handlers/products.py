@@ -58,12 +58,11 @@ async def products_list(callback: CallbackQuery) -> None:
 
     text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
     for card in cards[:10]:
-        nm_id = card.get("nmID", "—")
         vendor = card.get("vendorCode", "—")
         brand = card.get("brand", "—")
         name = card.get("title", "—")
         text += f"• <b>{name}</b>\n"
-        text += f"  Артикул: {vendor} (nmID: {nm_id})\n"
+        text += f"  Артикул: {vendor}\n"
         text += f"  Бренд: {brand}\n\n"
 
     if len(cards) > 10:
@@ -107,11 +106,10 @@ async def products_stocks(callback: CallbackQuery) -> None:
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
     for stock in stocks[:10]:
-        nm_id = stock.get("nmId", "—")
         vendor = stock.get("vendorCode", "—")
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
-        text += f"• nmID: {nm_id} ({vendor})\n"
+        text += f"• {vendor}\n"
         text += f"  Всего: {total} шт.\n"
         for w in warehouses[:3]:
             text += f"    {w.get('warehouseName', '—')}: {w.get('quantity', 0)} шт.\n"
@@ -157,14 +155,14 @@ async def products_prices(callback: CallbackQuery) -> None:
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
     for price in prices[:10]:
-        nm_id = price.get("nmID", "—")
+        vendor = price.get("vendorCode", "—")
         sizes = price.get("sizes", [])
         if sizes:
             current = sizes[0].get("price", 0)
             discounted = sizes[0].get("discountedPrice", current)
         else:
             current = discounted = 0
-        text += f"• nmID: {nm_id}\n"
+        text += f"• {vendor}\n"
         text += f"  Цена: {_format_price(current)}\n"
         text += f"  Со скидкой: {_format_price(discounted)}\n\n"
 

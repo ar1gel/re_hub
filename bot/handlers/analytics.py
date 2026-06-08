@@ -62,9 +62,8 @@ async def analytics_funnel(callback: CallbackQuery) -> None:
     if cards:
         text += f"<b>По товарам ({len(cards)} шт.):</b>\n\n"
         for card in cards[:5]:
-            nm_id = card.get("nmId", "—")
             name = card.get("cardName", "—")
-            text += f"• {name} (nmID: {nm_id})\n"
+            text += f"• {name}\n"
     else:
         text += "Нет данных о товарах в отчёте.\n"
 
