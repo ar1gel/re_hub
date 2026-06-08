@@ -6,7 +6,7 @@ from aiogram.types import Message, CallbackQuery
 
 from db.engine import get_session
 from db.repository import get_or_create_user, get_accounts, get_account_by_id, add_account, delete_account, get_ignore_list, add_to_ignore, remove_from_ignore
-from bot.keyboards import accounts_menu, account_actions, ignore_list_menu, cancel_button, main_menu, back_button
+from bot.keyboards import accounts_menu, account_actions, ignore_list_menu, cancel_button, back_button
 from bot.wb_client import WbClient
 
 router = Router()
@@ -99,10 +99,7 @@ async def account_add_token(message: Message, state: FSMContext) -> None:
         account = await add_account(session, message.from_user.id, name, token)
 
     await state.clear()
-    await message.answer(
-        f"✅ <b>Аккаунт «{account.name}» успешно добавлен!</b>",
-        reply_markup=main_menu(),
-    )
+    await message.answer(f"✅ <b>Аккаунт «{account.name}» успешно добавлен!</b>")
 
 
 @router.callback_query(F.data.startswith("account_select:"))

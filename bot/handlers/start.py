@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 
 from db.engine import get_session
 from db.repository import get_or_create_user
-from bot.keyboards import main_menu, back_button, main_reply_kb, products_menu, orders_menu, analytics_menu, finances_menu
+from bot.keyboards import main_reply_kb, products_menu, orders_menu, analytics_menu, finances_menu
 
 router = Router()
 
@@ -25,21 +25,14 @@ async def cmd_start(message: Message) -> None:
         "Здесь ты можешь управлять товарами, заказами, "
         "смотреть аналитику и финансы.\n\n"
         "Чтобы начать, добавь токен WB в разделе «Аккаунты WB».",
-        reply_markup=main_menu(),
+        reply_markup=main_reply_kb(),
     )
-    await message.answer("📌 Кнопки быстрого доступа:", reply_markup=main_reply_kb())
 
 
 @router.callback_query(F.data == "back_main")
 async def back_to_main(callback: CallbackQuery) -> None:
     await callback.message.edit_text(
-        "🏠 <b>Главное меню</b>\n\nВыбери раздел:",
-        reply_markup=main_menu(),
-    )
-    await callback.bot.send_message(
-        callback.from_user.id,
-        "📌 Кнопки быстрого доступа:",
-        reply_markup=main_reply_kb(),
+        "🏠 <b>Главное меню</b>\n\nВыбери раздел",
     )
     await callback.answer()
 
@@ -58,7 +51,6 @@ async def menu_help(callback: CallbackQuery) -> None:
         "Для начала добавь токен WB API в разделе аккаунтов.\n"
         "Токен можно получить в личном кабинете WB: "
         "Настройки → Доступ к API",
-        reply_markup=back_button(),
     )
     await callback.answer()
 
