@@ -98,7 +98,7 @@ async def account_info(message: Message) -> None:
         try:
             info = await client.get_seller_info()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=account_actions_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=account_actions_kb())
             return
 
     text = (

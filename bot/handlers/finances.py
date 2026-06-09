@@ -40,7 +40,7 @@ async def finances_report(message: Message) -> None:
         try:
             report = await client.get_finance_report(date_from=date_from, date_to=date_to)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=finances_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=finances_kb())
             return
 
     if not report:
@@ -65,7 +65,7 @@ async def finances_report(message: Message) -> None:
             total_paid += float(item.get("forPay", 0) or 0)
     except Exception as e:
         await message.answer(
-            f"❌ Ошибка при обработке отчёта: {e}",
+            f"❌ Ошибка при обработке отчёта: {h(str(e))}",
             reply_markup=finances_kb(),
         )
         return

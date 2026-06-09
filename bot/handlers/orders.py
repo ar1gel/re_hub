@@ -53,7 +53,7 @@ async def orders_new(message: Message) -> None:
         try:
             orders = await client.get_orders(date_from=date_from)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=orders_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=orders_kb())
             return
 
     orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
@@ -83,7 +83,7 @@ async def orders_sales(message: Message) -> None:
         try:
             sales = await client.get_sales(date_from=date_from)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=orders_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=orders_kb())
             return
 
     sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])

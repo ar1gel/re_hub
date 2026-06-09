@@ -38,7 +38,7 @@ async def products_list(message: Message) -> None:
         try:
             data = await client.get_products_list()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
             return
 
     cards = data.get("cards", []) if isinstance(data, dict) else []
@@ -79,7 +79,7 @@ async def products_stocks(message: Message) -> None:
         try:
             stocks = await client.get_product_stocks()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
             return
 
     stocks = filter_by_ignore_list(stocks, account)
@@ -120,7 +120,7 @@ async def products_prices(message: Message) -> None:
         try:
             prices = await client.get_prices()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
             return
 
     prices = filter_by_ignore_list(prices, account)

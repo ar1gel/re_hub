@@ -32,7 +32,7 @@ async def analytics_funnel(message: Message) -> None:
         try:
             data = await client.get_sales_funnel(nm_ids=[])
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {e}", reply_markup=analytics_kb())
+            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=analytics_kb())
             return
 
     response_data = data.get("data", {}) if isinstance(data, dict) else {}
