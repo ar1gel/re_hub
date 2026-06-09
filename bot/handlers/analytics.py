@@ -49,12 +49,25 @@ async def analytics_funnel(message: Message) -> None:
         )
 
     if products:
-        text += f"<b>По товарам ({len(products)} шт.):</b>\n\n"
+        items = []
         for product in products:
             card = product.get("product", {}) if isinstance(product, dict) else {}
             name = esc(card.get("title", "—"))
-            text += f"• {name}\n"
+            items.append(f"• {name}\n")
+        header = text + f"<b>По товарам ({len(products)} шт.):</b>"
+        chunk = header + "\n\n"
+        chunks = []
+        for item in items:
+            if len(chunk) + len(item) > 4096:
+                chunks.append(chunk)
+                chunk = item
+            else:
+                chunk += item
+        chunks.append(chunk)
     else:
         text += "Нет данных о товарах в отчёте.\n"
+        chunks = [text]
 
-    await message.answer(text, reply_markup=analytics_kb())
+    for i, part in enumerate(chunks):
+        kb = analytics_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)

@@ -12,22 +12,21 @@ from bot.menu import set_menu
 router = Router()
 
 
-def _fmt_orders(orders: list, title: str) -> str:
+def _build_items(orders: list) -> tuple[str, list[str]]:
     if not orders:
-        return f"📭 {title}: нет данных."
-
-    text = f"{title} ({len(orders)} шт.)\n\n"
+        return "", []
+    items = []
     for order in orders:
         art = esc(order.get("vendorCode") or order.get("supplierArticle", "—"))
         qty = order.get("quantity", 0)
         total = order.get("totalPrice") or 0
         status = esc(order.get("wbStatus", "—"))
-        text += (
+        items.append(
             f"• <b>Артикул:</b> {art}\n"
             f"  Кол-во: {qty}, Сумма: {total:,.2f} ₽\n"
             f"  Статус: {status}\n\n"
         )
-    return text
+    return items
 
 
 @router.message(F.text == "📥 Новые заказы")
@@ -56,8 +55,23 @@ async def orders_new(message: Message) -> None:
             return
 
     orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
-    text = _fmt_orders(orders, "📥 <b>Новые заказы</b>")
-    await message.answer(text, reply_markup=orders_kb())
+    items = _build_items(orders)
+    if not items:
+        await message.answer("📥 <b>Новые заказы</b>: нет данных.", reply_markup=orders_kb())
+        return
+    header = f"📥 <b>Новые заказы</b> ({len(orders)} шт.)"
+    chunk = header + "\n\n"
+    chunks = []
+    for item in items:
+        if len(chunk) + len(item) > 4096:
+            chunks.append(chunk)
+            chunk = item
+        else:
+            chunk += item
+    chunks.append(chunk)
+    for i, part in enumerate(chunks):
+        kb = orders_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)
 
 
 @router.message(F.text == "📤 Продажи")
@@ -86,5 +100,20 @@ async def orders_sales(message: Message) -> None:
             return
 
     sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])
-    text = _fmt_orders(sales, "📤 <b>Продажи</b>")
-    await message.answer(text, reply_markup=orders_kb())
+    items = _build_items(sales)
+    if not items:
+        await message.answer("📤 <b>Продажи</b>: нет данных.", reply_markup=orders_kb())
+        return
+    header = f"📤 <b>Продажи</b> ({len(sales)} шт.)"
+    chunk = header + "\n\n"
+    chunks = []
+    for item in items:
+        if len(chunk) + len(item) > 4096:
+            chunks.append(chunk)
+            chunk = item
+        else:
+            chunk += item
+    chunks.append(chunk)
+    for i, part in enumerate(chunks):
+        kb = orders_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)

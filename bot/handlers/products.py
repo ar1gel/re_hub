@@ -45,16 +45,26 @@ async def products_list(message: Message) -> None:
         await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
         return
 
-    text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
+    header = f"📋 <b>Товары ({len(cards)} шт.)</b>"
+    chunk = header + "\n\n"
+    chunks = []
     for card in cards:
         vendor = esc(card.get("vendorCode", "—"))
         brand = esc(card.get("brand", "—"))
         name = esc(card.get("title", "—"))
-        text += f"• <b>{name}</b>\n"
-        text += f"  Артикул: {vendor}\n"
-        text += f"  Бренд: {brand}\n\n"
+        item = f"• <b>{name}</b>\n"
+        item += f"  Артикул: {vendor}\n"
+        item += f"  Бренд: {brand}\n\n"
+        if len(chunk) + len(item) > 4096:
+            chunks.append(chunk)
+            chunk = item
+        else:
+            chunk += item
+    chunks.append(chunk)
 
-    await message.answer(text, reply_markup=products_kb())
+    for i, part in enumerate(chunks):
+        kb = products_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)
 
 
 @router.message(F.text == "📦 Остатки")
@@ -85,17 +95,27 @@ async def products_stocks(message: Message) -> None:
         await message.answer("📭 Остатки не найдены.", reply_markup=products_kb())
         return
 
-    text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
+    header = f"📦 <b>Остатки ({len(stocks)} позиций)</b>"
+    chunk = header + "\n\n"
+    chunks = []
     for stock in stocks:
         vendor = esc(stock.get("vendorCode") or stock.get("supplierArticle") or "—")
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
-        text += f"• {vendor}\n"
-        text += f"  Всего: {total} шт.\n"
+        item = f"• {vendor}\n"
+        item += f"  Всего: {total} шт.\n"
         for w in warehouses:
-            text += f"    {esc(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
+            item += f"    {esc(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
+        if len(chunk) + len(item) > 4096:
+            chunks.append(chunk)
+            chunk = item
+        else:
+            chunk += item
+    chunks.append(chunk)
 
-    await message.answer(text, reply_markup=products_kb())
+    for i, part in enumerate(chunks):
+        kb = products_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)
 
 
 @router.message(F.text == "💰 Цены")
@@ -126,7 +146,9 @@ async def products_prices(message: Message) -> None:
         await message.answer("📭 Цены не найдены.", reply_markup=products_kb())
         return
 
-    text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
+    header = f"💰 <b>Цены ({len(prices)} позиций)</b>"
+    chunk = header + "\n\n"
+    chunks = []
     for price in prices:
         vendor = esc(price.get("vendorCode", "—"))
         sizes = price.get("sizes", [])
@@ -135,8 +157,16 @@ async def products_prices(message: Message) -> None:
             discounted = sizes[0].get("discountedPrice", current)
         else:
             current = discounted = 0
-        text += f"• {vendor}\n"
-        text += f"  Цена: {_format_price(current)}\n"
-        text += f"  Со скидкой: {_format_price(discounted)}\n\n"
+        item = f"• {vendor}\n"
+        item += f"  Цена: {_format_price(current)}\n"
+        item += f"  Со скидкой: {_format_price(discounted)}\n\n"
+        if len(chunk) + len(item) > 4096:
+            chunks.append(chunk)
+            chunk = item
+        else:
+            chunk += item
+    chunks.append(chunk)
 
-    await message.answer(text, reply_markup=products_kb())
+    for i, part in enumerate(chunks):
+        kb = products_kb() if i == len(chunks) - 1 else None
+        await message.answer(part, reply_markup=kb)
