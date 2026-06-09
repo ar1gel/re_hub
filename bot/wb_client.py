@@ -61,7 +61,7 @@ class WbClient:
     async def get_product_stocks(self) -> list[dict]:
         task_data = await self._request(
             "get", f"{ANALYTICS_API}/api/v1/warehouse_remains",
-            params={"groupByNm": "true"},
+            params={"groupByNm": "true", "groupBySa": "true"},
         )
         task_id = task_data.get("data", {}).get("taskId")
         if not task_id:

@@ -87,7 +87,7 @@ async def products_stocks(message: Message) -> None:
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
     for stock in stocks:
-        vendor = esc(stock.get("vendorCode", "—"))
+        vendor = esc(stock.get("vendorCode") or stock.get("supplierArticle") or "—")
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
         text += f"• {vendor}\n"
