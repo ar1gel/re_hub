@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from html import escape as h
 
 from aiogram import Router, F
 from aiogram.types import Message
@@ -7,6 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import finances_kb, main_kb
+from bot.utils import esc
 from bot.menu import set_menu
 
 router = Router()
@@ -40,7 +40,7 @@ async def finances_report(message: Message) -> None:
         try:
             report = await client.get_finance_report(date_from=date_from, date_to=date_to)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=finances_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=finances_kb())
             return
 
     if not report:
@@ -65,7 +65,7 @@ async def finances_report(message: Message) -> None:
             total_paid += float(item.get("forPay", 0) or 0)
     except Exception as e:
         await message.answer(
-            f"❌ Ошибка при обработке отчёта: {h(str(e))}",
+            f"❌ Ошибка при обработке отчёта: {esc(e)}",
             reply_markup=finances_kb(),
         )
         return

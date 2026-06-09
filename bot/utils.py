@@ -1,5 +1,13 @@
+from html import escape
+
 from db.repository import get_ignore_list
 from db.models import WbAccount
+
+
+def esc(val, default: str = "—") -> str:
+    if val is None:
+        return default
+    return escape(str(val))
 
 
 def filter_by_ignore_list(
@@ -19,9 +27,9 @@ def filter_by_ignore_list(
             val = item.get(k)
             if not val:
                 continue
-            val_lower = val.lower()
+            val_str = str(val).lower()
             for p in patterns:
-                if val_lower == p.lower() or p.lower() in val_lower:
+                if val_str == p.lower() or p.lower() in val_str:
                     return True
         return False
 

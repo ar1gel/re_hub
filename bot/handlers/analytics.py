@@ -1,11 +1,10 @@
-from html import escape as h
-
 from aiogram import Router, F
 from aiogram.types import Message
 
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import analytics_kb, main_kb
+from bot.utils import esc
 from bot.menu import set_menu
 
 router = Router()
@@ -32,7 +31,7 @@ async def analytics_funnel(message: Message) -> None:
         try:
             data = await client.get_sales_funnel(nm_ids=[])
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=analytics_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=analytics_kb())
             return
 
     response_data = data.get("data", {}) if isinstance(data, dict) else {}
@@ -53,7 +52,7 @@ async def analytics_funnel(message: Message) -> None:
         text += f"<b>По товарам ({len(products)} шт.):</b>\n\n"
         for product in products:
             card = product.get("product", {}) if isinstance(product, dict) else {}
-            name = h(card.get("title", "—"))
+            name = esc(card.get("title", "—"))
             text += f"• {name}\n"
     else:
         text += "Нет данных о товарах в отчёте.\n"

@@ -1,12 +1,10 @@
-from html import escape as h
-
 from aiogram import Router, F
 from aiogram.types import Message
 
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import products_kb, main_kb
-from bot.utils import filter_by_ignore_list
+from bot.utils import filter_by_ignore_list, esc
 from bot.menu import set_menu
 
 router = Router()
@@ -38,7 +36,7 @@ async def products_list(message: Message) -> None:
         try:
             data = await client.get_products_list()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
             return
 
     cards = data.get("cards", []) if isinstance(data, dict) else []
@@ -49,9 +47,9 @@ async def products_list(message: Message) -> None:
 
     text = f"📋 <b>Товары ({len(cards)} шт.)</b>\n\n"
     for card in cards:
-        vendor = h(card.get("vendorCode", "—"))
-        brand = h(card.get("brand", "—"))
-        name = h(card.get("title", "—"))
+        vendor = esc(card.get("vendorCode", "—"))
+        brand = esc(card.get("brand", "—"))
+        name = esc(card.get("title", "—"))
         text += f"• <b>{name}</b>\n"
         text += f"  Артикул: {vendor}\n"
         text += f"  Бренд: {brand}\n\n"
@@ -79,7 +77,7 @@ async def products_stocks(message: Message) -> None:
         try:
             stocks = await client.get_product_stocks()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
             return
 
     stocks = filter_by_ignore_list(stocks, account)
@@ -89,13 +87,13 @@ async def products_stocks(message: Message) -> None:
 
     text = f"📦 <b>Остатки ({len(stocks)} позиций)</b>\n\n"
     for stock in stocks:
-        vendor = h(stock.get("vendorCode", "—"))
+        vendor = esc(stock.get("vendorCode", "—"))
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
         text += f"• {vendor}\n"
         text += f"  Всего: {total} шт.\n"
         for w in warehouses:
-            text += f"    {h(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
+            text += f"    {esc(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
 
     await message.answer(text, reply_markup=products_kb())
 
@@ -120,7 +118,7 @@ async def products_prices(message: Message) -> None:
         try:
             prices = await client.get_prices()
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=products_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
             return
 
     prices = filter_by_ignore_list(prices, account)
@@ -130,7 +128,7 @@ async def products_prices(message: Message) -> None:
 
     text = f"💰 <b>Цены ({len(prices)} позиций)</b>\n\n"
     for price in prices:
-        vendor = h(price.get("vendorCode", "—"))
+        vendor = esc(price.get("vendorCode", "—"))
         sizes = price.get("sizes", [])
         if sizes:
             current = sizes[0].get("price", 0)

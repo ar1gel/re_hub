@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from html import escape as h
 
 from aiogram import Router, F
 from aiogram.types import Message
@@ -7,7 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import orders_kb, main_kb
-from bot.utils import filter_by_ignore_list
+from bot.utils import filter_by_ignore_list, esc
 from bot.menu import set_menu
 
 router = Router()
@@ -19,10 +18,10 @@ def _fmt_orders(orders: list, title: str) -> str:
 
     text = f"{title} ({len(orders)} шт.)\n\n"
     for order in orders:
-        art = h(order.get("vendorCode") or order.get("supplierArticle", "—"))
+        art = esc(order.get("vendorCode") or order.get("supplierArticle", "—"))
         qty = order.get("quantity", 0)
         total = order.get("totalPrice") or 0
-        status = h(order.get("wbStatus", "—"))
+        status = esc(order.get("wbStatus", "—"))
         text += (
             f"• <b>Артикул:</b> {art}\n"
             f"  Кол-во: {qty}, Сумма: {total:,.2f} ₽\n"
@@ -53,7 +52,7 @@ async def orders_new(message: Message) -> None:
         try:
             orders = await client.get_orders(date_from=date_from)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=orders_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
             return
 
     orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
@@ -83,7 +82,7 @@ async def orders_sales(message: Message) -> None:
         try:
             sales = await client.get_sales(date_from=date_from)
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {h(str(e))}", reply_markup=orders_kb())
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
             return
 
     sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])
