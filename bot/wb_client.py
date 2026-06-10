@@ -67,8 +67,9 @@ class WbClient:
         if not task_id:
             raise RuntimeError("Не удалось создать задачу отчёта об остатках")
 
-        for _ in range(20):
-            await asyncio.sleep(6)
+        for i in range(21):
+            if i > 0:
+                await asyncio.sleep(6)
             status_data = await self._request(
                 "get", f"{ANALYTICS_API}/api/v1/warehouse_remains/tasks/{task_id}/status",
             )
@@ -77,7 +78,6 @@ class WbClient:
         else:
             raise RuntimeError("Отчёт об остатках не сформировался за 2 мин")
 
-        await asyncio.sleep(2)
         data = await self._request(
             "get", f"{ANALYTICS_API}/api/v1/warehouse_remains/tasks/{task_id}/download",
         )
