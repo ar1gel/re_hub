@@ -6,6 +6,7 @@ from db.repository import get_accounts
 from bot.keyboards import products_kb, main_kb
 from bot.utils import filter_by_ignore_list, esc
 from bot.menu import set_menu
+from bot.cache import get as cache_get, set as cache_set
 
 router = Router()
 
@@ -81,14 +82,19 @@ async def products_stocks(message: Message) -> None:
         return
 
     account = accounts[0]
-    from bot.wb_client import WbClient
 
-    async with WbClient(account.token) as client:
-        try:
-            stocks = await client.get_product_stocks()
-        except Exception as e:
-            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
-            return
+    cache_key = f"stocks:{account.id}"
+    stocks = cache_get(cache_key)
+    if stocks is None:
+        from bot.wb_client import WbClient
+
+        async with WbClient(account.token) as client:
+            try:
+                stocks = await client.get_product_stocks()
+            except Exception as e:
+                await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
+                return
+        cache_set(cache_key, stocks)
 
     stocks = filter_by_ignore_list(stocks, account)
     if not stocks:
