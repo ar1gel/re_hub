@@ -14,7 +14,7 @@ router = Router()
 def _format_price(price: int | float | None) -> str:
     if price is None:
         return "—"
-    return f"{price:,.2f} ₽"
+    return f"<code>{price:,.2f} ₽</code>"
 
 
 @router.message(F.text == "📋 Список товаров")
@@ -53,9 +53,9 @@ async def products_list(message: Message) -> None:
         vendor = esc(card.get("vendorCode", "—"))
         brand = esc(card.get("brand", "—"))
         name = esc(card.get("title", "—"))
-        item = f"• <b>{name}</b>\n"
-        item += f"  Артикул: {vendor}\n"
-        item += f"  Бренд: {brand}\n\n"
+        item = f"<b>{name}</b>\n"
+        item += f"  🆔 Артикул: <code>{vendor}</code>\n"
+        item += f"  🏷 Бренд: {brand}\n\n"
         if len(chunk) + len(item) > 4096:
             chunks.append(chunk)
             chunk = item
@@ -108,10 +108,10 @@ async def products_stocks(message: Message) -> None:
         vendor = esc(stock.get("vendorCode") or stock.get("supplierArticle") or "—")
         warehouses = stock.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in warehouses)
-        item = f"• {vendor}\n"
-        item += f"  Всего: {total} шт.\n"
+        item = f"<b>{vendor}</b>\n"
+        item += f"  Всего: <code>{total}</code> шт.\n"
         for w in warehouses:
-            item += f"    {esc(w.get('warehouseName', '—'))}: {w.get('quantity', 0)} шт.\n"
+            item += f"  {esc(w.get('warehouseName', '—'))}: <code>{w.get('quantity', 0)}</code> шт.\n"
         if len(chunk) + len(item) > 4096:
             chunks.append(chunk)
             chunk = item
@@ -163,7 +163,7 @@ async def products_prices(message: Message) -> None:
             discounted = sizes[0].get("discountedPrice", current)
         else:
             current = discounted = 0
-        item = f"• {vendor}\n"
+        item = f"<b>{vendor}</b>\n"
         item += f"  Цена: {_format_price(current)}\n"
         item += f"  Со скидкой: {_format_price(discounted)}\n\n"
         if len(chunk) + len(item) > 4096:

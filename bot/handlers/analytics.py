@@ -42,10 +42,10 @@ async def analytics_funnel(message: Message) -> None:
 
     if statistics:
         text += (
-            f"👁 Просмотры: {statistics.get('views', '—')}\n"
-            f"🛒 В корзину: {statistics.get('addToCart', '—')}\n"
-            f"📦 Заказы: {statistics.get('orders', '—')}\n"
-            f"✅ Выкупы: {statistics.get('buyouts', '—')}\n\n"
+            f"👁 Просмотры: <b>{statistics.get('views', '—')}</b>\n"
+            f"🛒 В корзину: <b>{statistics.get('addToCart', '—')}</b>\n"
+            f"📦 Заказы: <b>{statistics.get('orders', '—')}</b>\n"
+            f"✅ Выкупы: <b>{statistics.get('buyouts', '—')}</b>\n\n"
         )
 
     if products:
@@ -53,7 +53,7 @@ async def analytics_funnel(message: Message) -> None:
         for product in products:
             card = product.get("product", {}) if isinstance(product, dict) else {}
             name = esc(card.get("title", "—"))
-            items.append(f"• {name}\n")
+            items.append(f"• <b>{name}</b>\n")
         header = text + f"<b>По товарам ({len(products)} шт.):</b>"
         chunk = header + "\n\n"
         chunks = []

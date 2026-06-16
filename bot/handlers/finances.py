@@ -13,7 +13,7 @@ router = Router()
 
 
 def _fmt_currency(kopecks: int) -> str:
-    return f"{kopecks / 100:,.2f} ₽"
+    return f"<code>{kopecks / 100:,.2f} ₽</code>"
 
 
 @router.message(F.text == "📄 Отчёт по реализации")
@@ -73,7 +73,7 @@ async def finances_report(message: Message) -> None:
     text = (
         f"💰 <b>Отчёт по реализации</b>\n"
         f"📅 {date_from} — {date_to}\n\n"
-        f"📦 Заказов: {total_orders}\n"
+        f"📦 Заказов: <code>{total_orders}</code>\n"
         f"💵 Продажи: {_fmt_currency(total_sales)}\n"
         f"📉 Комиссия WB: {_fmt_currency(abs(total_commission))}\n"
         f"🚚 Логистика: {_fmt_currency(abs(total_logistics))}\n"

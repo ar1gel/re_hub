@@ -22,9 +22,9 @@ def _build_items(orders: list) -> tuple[str, list[str]]:
         total = order.get("totalPrice") or 0
         status = esc(order.get("wbStatus", "—"))
         items.append(
-            f"• <b>Артикул:</b> {art}\n"
-            f"  Кол-во: {qty}, Сумма: {total:,.2f} ₽\n"
-            f"  Статус: {status}\n\n"
+            f"<b>Артикул:</b> <code>{art}</code>\n"
+            f"Кол-во: <code>{qty}</code>, Сумма: <code>{total:,.2f} ₽</code>\n"
+            f"Статус: {status}\n\n"
         )
     return items
 
