@@ -4,7 +4,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import analytics_kb, main_kb
-from bot.utils import esc
+from bot.utils import esc, send_rich
 from bot.menu import set_menu
 
 router = Router()
@@ -14,19 +14,13 @@ router = Router()
 async def analytics_funnel(message: Message) -> None:
     async with get_session() as session:
         accounts = await get_accounts(session, message.from_user.id)
-
     if not accounts:
-        await message.answer(
-            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
-            reply_markup=main_kb(),
-        )
+        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
     account = accounts[0]
-
     from bot.wb_client import WbClient
-
     async with WbClient(account.token) as client:
         try:
             data = await client.get_sales_funnel(nm_ids=[])
@@ -34,40 +28,25 @@ async def analytics_funnel(message: Message) -> None:
             await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=analytics_kb())
             return
 
-    response_data = data.get("data", {}) if isinstance(data, dict) else {}
-    products = response_data.get("products", [])
-    statistics = response_data.get("statistics", {})
+    rd = data.get("data", {}) if isinstance(data, dict) else {}
+    products = rd.get("products", [])
+    stats = rd.get("statistics", {})
 
-    text = "<b>📈 Воронка продаж</b>\n\n"
-
-    if statistics:
-        text += (
-            f"👁 Просмотры: <b>{statistics.get('views', '—')}</b>\n"
-            f"🛒 В корзину: <b>{statistics.get('addToCart', '—')}</b>\n"
-            f"📦 Заказы: <b>{statistics.get('orders', '—')}</b>\n"
-            f"✅ Выкупы: <b>{statistics.get('buyouts', '—')}</b>\n\n"
-        )
+    md = "# 📈 Воронка продаж\n\n"
+    if stats:
+        md += "| Метрика | Значение |\n|:--------|--------:|\n"
+        md += f"| 👁 Просмотры | {stats.get('views', '—')} |\n"
+        md += f"| 🛒 В корзину | {stats.get('addToCart', '—')} |\n"
+        md += f"| 📦 Заказы | {stats.get('orders', '—')} |\n"
+        md += f"| ✅ Выкупы | {stats.get('buyouts', '—')} |\n"
 
     if products:
-        items = []
-        for product in products:
-            card = product.get("product", {}) if isinstance(product, dict) else {}
+        md += "\n## По товарам\n| № | Название |\n|:-:|:---------|\n"
+        for i, p in enumerate(products, 1):
+            card = p.get("product", {}) if isinstance(p, dict) else {}
             name = esc(card.get("title", "—"))
-            items.append(f"• <b>{name}</b>\n")
-        header = text + f"<b>По товарам ({len(products)} шт.):</b>"
-        chunk = header + "\n\n"
-        chunks = []
-        for item in items:
-            if len(chunk) + len(item) > 4096:
-                chunks.append(chunk)
-                chunk = item
-            else:
-                chunk += item
-        chunks.append(chunk)
+            md += f"| {i} | {name} |\n"
     else:
-        text += "Нет данных о товарах в отчёте.\n"
-        chunks = [text]
+        md += "\nНет данных о товарах в отчёте.\n"
 
-    for i, part in enumerate(chunks):
-        kb = analytics_kb() if i == len(chunks) - 1 else None
-        await message.answer(part, reply_markup=kb)
+    await send_rich(message, md, analytics_kb())
