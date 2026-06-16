@@ -42,24 +42,33 @@ def filter_by_ignore_list(
     return [i for i in items if not _is_ignored(i)]
 
 
+from aiogram.methods.base import TelegramMethod
+from aiogram.types import Message as AiogramMessage
+
+
+class _SendRichMessage(TelegramMethod[AiogramMessage]):
+    __returning__ = AiogramMessage
+    __api_method__ = "sendRichMessage"
+
+    chat_id: int | str
+    rich_message: dict[str, Any]
+    reply_markup: Any = None
+
+
 async def send_rich(
     msg: Message,
     markdown: str,
     reply_markup: Any = None,
-) -> dict:
-    bot = msg.bot
-    token = bot.token
+) -> AiogramMessage:
     payload: dict[str, Any] = {
-        "chat_id": msg.chat.id,
-        "rich_message": {"markdown": markdown},
+        "markdown": markdown,
     }
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup.model_dump(exclude_none=True)
-    async with bot.session.session.post(
-        f"https://api.telegram.org/bot{token}/sendRichMessage",
-        json=payload,
-    ) as resp:
-        result = await resp.json()
-        if not result.get("ok"):
-            raise RuntimeError(f"sendRichMessage failed: {result}")
-        return result["result"]
+    return await msg.bot(
+        _SendRichMessage(
+            chat_id=msg.chat.id,
+            rich_message=payload,
+            reply_markup=reply_markup,
+        )
+    )
