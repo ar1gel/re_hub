@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from aiogram import Router, F
 from aiogram.types import Message
 
@@ -51,10 +53,10 @@ async def products_list(message: Message) -> None:
         await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
         return
 
-    header = f"# 📋 Товары ({len(cards)} шт.)\n| Название | Артикул | Бренд |\n|:---------|:--------|:------|\n"
+    header = f"# 📋 Товары ({len(cards)} шт.)\n|Название|Артикул|Бренд|\n|:-|:-|:-|\n"
     rows = []
     for c in cards:
-        rows.append(f"| {esc(c.get('title', '—'))} | `{esc(c.get('vendorCode', '—'))}` | {esc(c.get('brand', '—'))} |\n")
+        rows.append(f"|{esc(c.get('title', '—'))}|`{esc(c.get('vendorCode', '—'))}`|{esc(c.get('brand', '—'))}|\n")
     parts, kb = _page(header, rows, products_kb())
     for i, p in enumerate(parts):
         await send_rich(message, p, kb if i == len(parts) - 1 else None)
@@ -92,12 +94,22 @@ async def products_stocks(message: Message) -> None:
         v = esc(s.get("vendorCode") or s.get("supplierArticle") or "—")
         wh = s.get("warehouses", [])
         total = sum(w.get("quantity", 0) for w in wh)
-        rows.append(f"## `{v}` — Всего: **{total}** шт.\n| Склад | Шт. |\n|:------|----:|\n")
+
+        by_region: dict[str, list[dict]] = defaultdict(list)
         for w in wh:
-            wh_name = w.get('warehouseName', '—')
-            region = WAREHOUSE_TO_REGION.get(wh_name)
-            label = f"{wh_name} ({region})" if region else wh_name
-            rows.append(f"| {esc(label)} | {w.get('quantity', 0)} |\n")
+            wh_name = w.get("warehouseName", "—")
+            region = WAREHOUSE_TO_REGION.get(wh_name, "Другие")
+            by_region[region].append(w)
+
+        rows.append(f"## `{v}` — **{total}** шт.\n|Регион|Склад|Шт.|\n|:-|:-|-:|\n")
+        for region in sorted(by_region):
+            w_list = by_region[region]
+            w_list.sort(key=lambda w: w.get("warehouseName", ""))
+            region_total = sum(w.get("quantity", 0) for w in w_list)
+            for i, w in enumerate(w_list):
+                rlabel = region if i == 0 else ""
+                rows.append(f"|{rlabel}|{w.get('warehouseName', '—')}|{w.get('quantity', 0)}|\n")
+            rows.append(f"||**Итого**|**{region_total}**|\n")
         rows.append("---\n")
 
     header = f"# 📦 Остатки ({len(stocks)} позиций)\n"
@@ -129,7 +141,7 @@ async def products_prices(message: Message) -> None:
         await message.answer("📭 Цены не найдены.", reply_markup=products_kb())
         return
 
-    header = f"# 💰 Цены ({len(prices)} позиций)\n| Артикул | Цена | Со скидкой |\n|:--------|-----:|-----------:|\n"
+    header = f"# 💰 Цены ({len(prices)} позиций)\n|Артикул|Цена|Со скидкой|\n|:-|-:|-:|\n"
     rows = []
     for p in prices:
         v = esc(p.get("vendorCode", "—"))
@@ -139,7 +151,7 @@ async def products_prices(message: Message) -> None:
             disc = sizes[0].get("discountedPrice", cur)
         else:
             cur = disc = 0
-        rows.append(f"| `{v}` | `{cur:,.2f} ₽` | `{disc:,.2f} ₽` |\n")
+        rows.append(f"|`{v}`|`{cur:,.2f} ₽`|`{disc:,.2f} ₽`|\n")
     parts, kb = _page(header, rows, products_kb())
     for i, p in enumerate(parts):
         await send_rich(message, p, kb if i == len(parts) - 1 else None)
