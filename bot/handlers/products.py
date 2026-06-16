@@ -5,6 +5,7 @@ from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import products_kb, main_kb
 from bot.utils import filter_by_ignore_list, esc, send_rich
+from bot.warehouses import WAREHOUSE_TO_REGION
 from bot.menu import set_menu
 from bot.cache import get as cache_get, set as cache_set
 
@@ -93,7 +94,10 @@ async def products_stocks(message: Message) -> None:
         total = sum(w.get("quantity", 0) for w in wh)
         rows.append(f"## `{v}` — Всего: **{total}** шт.\n| Склад | Шт. |\n|:------|----:|\n")
         for w in wh:
-            rows.append(f"| {esc(w.get('warehouseName', '—'))} | {w.get('quantity', 0)} |\n")
+            wh_name = w.get('warehouseName', '—')
+            region = WAREHOUSE_TO_REGION.get(wh_name)
+            label = f"{wh_name} ({region})" if region else wh_name
+            rows.append(f"| {esc(label)} | {w.get('quantity', 0)} |\n")
         rows.append("---\n")
 
     header = f"# 📦 Остатки ({len(stocks)} позиций)\n"
