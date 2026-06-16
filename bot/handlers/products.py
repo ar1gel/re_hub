@@ -53,10 +53,12 @@ async def products_list(message: Message) -> None:
         await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
         return
 
-    header = f"# 📋 Товары ({len(cards)} шт.)\n|Название|Артикул|Бренд|\n|:-|:-|:-|\n"
+    cards.sort(key=lambda c: (c.get("title") or "").lower())
+
+    header = f"# 📋 Товары ({len(cards)} шт.)\n| Название | Артикул | Бренд |\n|:---------|:--------|:------|\n"
     rows = []
     for c in cards:
-        rows.append(f"|{esc(c.get('title', '—'))}|`{esc(c.get('vendorCode', '—'))}`|{esc(c.get('brand', '—'))}|\n")
+        rows.append(f"| {esc(c.get('title', '—'))} | `{esc(c.get('vendorCode', '—'))}` | {esc(c.get('brand', '—'))} |\n")
     parts, kb = _page(header, rows, products_kb())
     for i, p in enumerate(parts):
         await send_rich(message, p, kb if i == len(parts) - 1 else None)
@@ -89,6 +91,8 @@ async def products_stocks(message: Message) -> None:
         await message.answer("📭 Остатки не найдены.", reply_markup=products_kb())
         return
 
+    stocks.sort(key=lambda s: (s.get("vendorCode") or s.get("supplierArticle") or "").lower())
+
     rows = []
     for s in stocks:
         v = esc(s.get("vendorCode") or s.get("supplierArticle") or "—")
@@ -101,15 +105,16 @@ async def products_stocks(message: Message) -> None:
             region = WAREHOUSE_TO_REGION.get(wh_name, "Другие")
             by_region[region].append(w)
 
-        rows.append(f"## `{v}` — **{total}** шт.\n|Регион|Склад|Шт.|\n|:-|:-|-:|\n")
+        rows.append(f"\n## `{v}` — **{total}** шт.\n| Регион | Склад | Шт. |\n|:-------|:------|----:|\n")
         for region in sorted(by_region):
             w_list = by_region[region]
             w_list.sort(key=lambda w: w.get("warehouseName", ""))
             region_total = sum(w.get("quantity", 0) for w in w_list)
             for i, w in enumerate(w_list):
                 rlabel = region if i == 0 else ""
-                rows.append(f"|{rlabel}|{w.get('warehouseName', '—')}|{w.get('quantity', 0)}|\n")
-            rows.append(f"||**Итого**|**{region_total}**|\n")
+                wh_name = w.get("warehouseName", "—")
+                rows.append(f"| {rlabel} | {wh_name} | {w.get('quantity', 0)} |\n")
+            rows.append(f"| | **Итого** | **{region_total}** |\n")
         rows.append("---\n")
 
     header = f"# 📦 Остатки ({len(stocks)} позиций)\n"
@@ -141,7 +146,9 @@ async def products_prices(message: Message) -> None:
         await message.answer("📭 Цены не найдены.", reply_markup=products_kb())
         return
 
-    header = f"# 💰 Цены ({len(prices)} позиций)\n|Артикул|Цена|Со скидкой|\n|:-|-:|-:|\n"
+    prices.sort(key=lambda p: (p.get("vendorCode") or "").lower())
+
+    header = f"# 💰 Цены ({len(prices)} позиций)\n| Артикул | Цена | Со скидкой |\n|:--------|-----:|-----------:|\n"
     rows = []
     for p in prices:
         v = esc(p.get("vendorCode", "—"))
@@ -151,7 +158,7 @@ async def products_prices(message: Message) -> None:
             disc = sizes[0].get("discountedPrice", cur)
         else:
             cur = disc = 0
-        rows.append(f"|`{v}`|`{cur:,.2f} ₽`|`{disc:,.2f} ₽`|\n")
+        rows.append(f"| `{v}` | `{cur:,.2f} ₽` | `{disc:,.2f} ₽` |\n")
     parts, kb = _page(header, rows, products_kb())
     for i, p in enumerate(parts):
         await send_rich(message, p, kb if i == len(parts) - 1 else None)
