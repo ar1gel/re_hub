@@ -73,37 +73,67 @@ async def products_stocks(message: Message) -> None:
         return
 
     account = accounts[0]
-    cache_key = f"stocks:{account.id}"
-    stocks = cache_get(cache_key)
-    if stocks is None:
-        from bot.wb_client import WbClient
-        async with WbClient(account.token) as client:
+    from bot.wb_client import WbClient
+    async with WbClient(account.token) as client:
+        try:
+            products = await client.get_products_list()
+        except Exception as e:
+            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
+            return
+
+        cache_key = f"stocks:{account.id}"
+        stocks = cache_get(cache_key)
+        if stocks is None:
             try:
                 stocks = await client.get_product_stocks()
             except Exception as e:
                 await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
                 return
-        cache_set(cache_key, stocks)
+            cache_set(cache_key, stocks)
 
-    stocks = filter_by_ignore_list(stocks, account)
-    if not stocks:
-        await message.answer("📭 Остатки не найдены.", reply_markup=products_kb())
+    stocks_by_vendor = {}
+    for s in stocks:
+        vendor = s.get("vendorCode") or s.get("supplierArticle")
+        if vendor:
+            stocks_by_vendor[vendor] = s
+
+    all_items = []
+    for p in products:
+        vendor = p.get("vendorCode")
+        if not vendor:
+            continue
+        if vendor in stocks_by_vendor:
+            s = stocks_by_vendor[vendor]
+            wh = s.get("warehouses", [])
+            wh = [w for w in wh if not any(kw in (w.get("warehouseName") or "").lower() for kw in ("всего", "в пути"))]
+            total = sum(w.get("quantity", 0) for w in wh)
+        else:
+            wh = []
+            total = 0
+        all_items.append({"vendorCode": vendor, "title": p.get("title", ""), "warehouses": wh, "total": total})
+
+    all_items = filter_by_ignore_list(all_items, account)
+    if not all_items:
+        await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
         return
 
-    stocks.sort(key=lambda s: (s.get("vendorCode") or s.get("supplierArticle") or "").lower())
+    all_items.sort(key=lambda x: x.get("title", "").lower())
 
     rows = []
-    for s in stocks:
-        v = esc(s.get("vendorCode") or s.get("supplierArticle") or "—")
-        wh = s.get("warehouses", [])
-        wh = [w for w in wh if not any(kw in (w.get("warehouseName") or "").lower() for kw in ("всего", "в пути"))]
-        total = sum(w.get("quantity", 0) for w in wh)
+    for item in all_items:
+        v = esc(item["vendorCode"])
+        wh = item["warehouses"]
+        total = item["total"]
 
         by_region: dict[str, list[dict]] = defaultdict(list)
         for w in wh:
             wh_name = w.get("warehouseName", "—")
             region = WAREHOUSE_TO_REGION.get(wh_name, "Другие")
             by_region[region].append(w)
+
+        if total == 0:
+            rows.append(f"\n## `{v}` — **0** шт.\n\n")
+            continue
 
         rows.append(f"\n## `{v}` — **{total}** шт.\n| Регион | Склад | Шт. |\n|:---:|:---|----:|\n")
         for region in sorted(by_region):
@@ -119,7 +149,7 @@ async def products_stocks(message: Message) -> None:
             rows.append(f"| | | **{region_total}** |\n")
         rows.append("---\n")
 
-    header = f"# 📦 Остатки ({len(stocks)} позиций)\n"
+    header = f"# 📦 Остатки ({len(all_items)} позиций)\n"
     parts, kb = _page(header, rows, products_kb())
     for i, p in enumerate(parts):
         await send_rich(message, p, kb if i == len(parts) - 1 else None)
