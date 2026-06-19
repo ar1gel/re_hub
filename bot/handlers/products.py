@@ -104,14 +104,16 @@ async def products_stocks(message: Message) -> None:
             region = WAREHOUSE_TO_REGION.get(wh_name, "Другие")
             by_region[region].append(w)
 
-        rows.append(f"\n## `{v}` — **{total}** шт.\n| Регион | Склад | Шт. |\n|:-------|:------|----:|\n")
+        rows.append(f"\n## `{v}` — **{total}** шт.\n| Регион | Склад | Шт. |\n|:---:|:---|----:|\n")
         for region in sorted(by_region):
             w_list = by_region[region]
             w_list.sort(key=lambda w: w.get("warehouseName", ""))
             region_total = sum(w.get("quantity", 0) for w in w_list)
             for i, w in enumerate(w_list):
-                rlabel = region if i == 0 else ""
+                rlabel = (region[:8] + "..") if len(region) > 10 and i == 0 else (region if i == 0 else "")
                 wh_name = w.get("warehouseName", "—")
+                if len(wh_name) > 14:
+                    wh_name = wh_name[:12] + ".."
                 rows.append(f"| {rlabel} | {wh_name} | {w.get('quantity', 0)} |\n")
             rows.append(f"| | | **{region_total}** |\n")
         rows.append("---\n")
