@@ -96,6 +96,7 @@ async def products_stocks(message: Message) -> None:
     for s in stocks:
         v = esc(s.get("vendorCode") or s.get("supplierArticle") or "—")
         wh = s.get("warehouses", [])
+        wh = [w for w in wh if w.get("warehouseName", "") not in ("Всего находится на складах", "В пути к покупателю")]
         total = sum(w.get("quantity", 0) for w in wh)
 
         by_region: dict[str, list[dict]] = defaultdict(list)
