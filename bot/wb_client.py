@@ -149,8 +149,8 @@ class WbClient:
         today = datetime.now()
         end = today.strftime("%Y-%m-%d")
         start = (today - timedelta(days=30)).strftime("%Y-%m-%d")
-        prev_end = start
-        prev_start = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+        prev_end = (today - timedelta(days=31)).strftime("%Y-%m-%d")
+        prev_start = (today - timedelta(days=61)).strftime("%Y-%m-%d")
         payload = {
             "selectedPeriod": {"start": start, "end": end},
             "pastPeriod": {"start": prev_start, "end": prev_end},
