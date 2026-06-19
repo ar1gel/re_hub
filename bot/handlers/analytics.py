@@ -1,28 +1,11 @@
 from aiogram import Router, F
 from aiogram.types import Message
 
-from db.engine import get_session
-from db.repository import get_accounts
-from bot.keyboards import analytics_kb, main_kb
-from bot.utils import esc, filter_by_ignore_list, get_selected_account, get_account_name
-from bot.menu import set_menu
+from bot.keyboards import analytics_kb
+from bot.utils import esc, ensure_account, call_wb, send_chunked, filter_by_ignore_list
+from db.models import WbAccount
 
 router = Router()
-
-LIMIT = 4000
-
-
-def _is_ignored(item: dict, account) -> bool:
-    prod = item.get("product", {}) if isinstance(item, dict) else {}
-    vendor = prod.get("vendorCode")
-    if not vendor:
-        return False
-    from db.repository import get_ignore_list
-    patterns = get_ignore_list(account)
-    for p in patterns:
-        if p.lower() in vendor.lower():
-            return True
-    return False
 
 
 def _dynamics(val: int | float) -> str:
@@ -33,22 +16,34 @@ def _dynamics(val: int | float) -> str:
     return "0%"
 
 
+def _extract_vendor(item: dict) -> str | None:
+    prod = item.get("product", {}) if isinstance(item, dict) else {}
+    return prod.get("vendorCode")
+
+
+def _filter_funnel(products: list[dict], account: WbAccount) -> list[dict]:
+    patterns = [p.lower() for p in _get_ignore_list(account)]
+    if not patterns:
+        return products
+    return [p for p in products if not any(pat in (_extract_vendor(p) or "").lower() for pat in patterns)]
+
+
+def _get_ignore_list(account: WbAccount) -> list[str]:
+    from db.repository import get_ignore_list
+    return get_ignore_list(account)
+
+
 @router.message(F.text == "📈 Воронка продаж")
 async def analytics_funnel(message: Message) -> None:
-    account = await get_selected_account(message.from_user.id)
+    account = await ensure_account(message)
     if not account:
-        acc_name = await get_account_name(message.from_user.id)
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
-        set_menu(message.from_user.id, "main")
         return
 
-    from bot.wb_client import WbClient
-    async with WbClient(account.token) as client:
-        try:
-            data = await client.get_sales_funnel(nm_ids=[])
-        except Exception as e:
-            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=analytics_kb())
-            return
+    try:
+        data = await call_wb(account, "get_sales_funnel", nm_ids=[])
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=analytics_kb())
+        return
 
     rd = data.get("data", {}) if isinstance(data, dict) else {}
     products = rd.get("products", [])
@@ -57,7 +52,7 @@ async def analytics_funnel(message: Message) -> None:
         await message.answer("📈 Воронка продаж\n\nНет данных за период.", reply_markup=analytics_kb())
         return
 
-    products = [p for p in products if not _is_ignored(p, account)]
+    products = _filter_funnel(products, account)
 
     if not products:
         await message.answer("📈 Воронка продаж\n\nНет данных (все позиции в игнор-листе).", reply_markup=analytics_kb())
@@ -120,7 +115,7 @@ async def analytics_funnel(message: Message) -> None:
             f"Средняя цена: {avg_price:,} ₽\n"
         )
 
-        if len(chunk) + len(item_text) > LIMIT:
+        if len(chunk) + len(item_text) > 4000:
             parts.append(chunk)
             chunk = item_text
         else:

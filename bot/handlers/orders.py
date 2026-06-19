@@ -3,15 +3,10 @@ from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message
 
-from db.engine import get_session
-from db.repository import get_accounts
-from bot.keyboards import orders_kb, main_kb
-from bot.utils import filter_by_ignore_list, esc, send_rich, get_selected_account, get_account_name
-from bot.menu import set_menu
+from bot.keyboards import orders_kb
+from bot.utils import filter_by_ignore_list, esc, send_rich, ensure_account, call_wb, chunk_message
 
 router = Router()
-
-LIMIT = 32000
 
 
 def _build_rows(items: list[dict]) -> list[str]:
@@ -27,21 +22,16 @@ def _build_rows(items: list[dict]) -> list[str]:
 
 @router.message(F.text == "📥 Новые заказы")
 async def orders_new(message: Message) -> None:
-    account = await get_selected_account(message.from_user.id)
+    account = await ensure_account(message)
     if not account:
-        acc_name = await get_account_name(message.from_user.id)
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
-        set_menu(message.from_user.id, "main")
         return
 
     date_from = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-    from bot.wb_client import WbClient
-    async with WbClient(account.token) as client:
-        try:
-            orders = await client.get_orders(date_from=date_from)
-        except Exception as e:
-            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
-            return
+    try:
+        orders = await call_wb(account, "get_orders", date_from=date_from)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
+        return
 
     orders = filter_by_ignore_list(orders, account, code_keys=["vendorCode", "supplierArticle"])
     if not orders:
@@ -50,15 +40,7 @@ async def orders_new(message: Message) -> None:
 
     header = f"# 📥 Новые заказы ({len(orders)} шт.)\n| Артикул | Кол-во | Сумма | Статус |\n|:--------|:------:|------:|:-------|\n"
     rows = _build_rows(orders)
-    chunk = header
-    parts = []
-    for r in rows:
-        if len(chunk) + len(r) > LIMIT:
-            parts.append(chunk)
-            chunk = r
-        else:
-            chunk += r
-    parts.append(chunk)
+    parts = chunk_message(header, rows)
     for i, p in enumerate(parts):
         await send_rich(message, p, orders_kb() if i == len(parts) - 1 else None)
 
@@ -75,21 +57,16 @@ def _build_sales_rows(items: list[dict]) -> list[str]:
 
 @router.message(F.text == "📤 Продажи")
 async def orders_sales(message: Message) -> None:
-    account = await get_selected_account(message.from_user.id)
+    account = await ensure_account(message)
     if not account:
-        acc_name = await get_account_name(message.from_user.id)
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
-        set_menu(message.from_user.id, "main")
         return
 
     date_from = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    from bot.wb_client import WbClient
-    async with WbClient(account.token) as client:
-        try:
-            sales = await client.get_sales(date_from=date_from)
-        except Exception as e:
-            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
-            return
+    try:
+        sales = await call_wb(account, "get_sales", date_from=date_from)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=orders_kb())
+        return
 
     sales = filter_by_ignore_list(sales, account, code_keys=["vendorCode", "supplierArticle"])
     if not sales:
@@ -109,26 +86,12 @@ async def orders_sales(message: Message) -> None:
     if fbo:
         header = f"# 📦 Продажи FBO — Склад WB ({len(fbo)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbo_total:,.0f} ₽` | `{fbo_for_pay:,.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
         rows = _build_sales_rows(fbo)
-        chunk = header
-        for r in rows:
-            if len(chunk) + len(r) > LIMIT:
-                parts.append(chunk)
-                chunk = r
-            else:
-                chunk += r
-        parts.append(chunk)
+        parts.extend(chunk_message(header, rows))
 
     if fbs:
         header = f"# 📋 Продажи FBS — Склад продавца ({len(fbs)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbs_total:,.0f} ₽` | `{fbs_for_pay:,.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
         rows = _build_sales_rows(fbs)
-        chunk = header
-        for r in rows:
-            if len(chunk) + len(r) > LIMIT:
-                parts.append(chunk)
-                chunk = r
-            else:
-                chunk += r
-        parts.append(chunk)
+        parts.extend(chunk_message(header, rows))
 
     if not parts:
         await message.answer("📤 **Продажи**: нет данных.", reply_markup=orders_kb())

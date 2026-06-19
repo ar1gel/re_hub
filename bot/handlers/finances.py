@@ -3,35 +3,27 @@ from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message
 
-from db.engine import get_session
-from db.repository import get_accounts
-from bot.keyboards import finances_kb, main_kb
-from bot.utils import esc, send_rich, get_selected_account, get_account_name
-from bot.menu import set_menu
+from bot.keyboards import finances_kb
+from bot.utils import esc, send_rich, ensure_account, call_wb
 
 router = Router()
 
 
 @router.message(F.text == "📄 Отчёт по реализации")
 async def finances_report(message: Message) -> None:
-    account = await get_selected_account(message.from_user.id)
+    account = await ensure_account(message)
     if not account:
-        acc_name = await get_account_name(message.from_user.id)
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
-        set_menu(message.from_user.id, "main")
         return
 
     today = datetime.now()
     date_to = today.strftime("%Y-%m-%d")
     date_from = (today - timedelta(days=30)).strftime("%Y-%m-%d")
 
-    from bot.wb_client import WbClient
-    async with WbClient(account.token) as client:
-        try:
-            report = await client.get_finance_report(date_from=date_from, date_to=date_to)
-        except Exception as e:
-            await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=finances_kb())
-            return
+    try:
+        report = await call_wb(account, "get_finance_report", date_from=date_from, date_to=date_to)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=finances_kb())
+        return
 
     if not report:
         await message.answer("📭 Нет данных за последние 30 дней.", reply_markup=finances_kb())

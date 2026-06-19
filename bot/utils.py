@@ -63,6 +63,52 @@ async def get_account_name(tg_id: int) -> str | None:
     return acc.name if acc else None
 
 
+async def ensure_account(message: Message) -> WbAccount | None:
+    """Check for selected account; send error if missing, return None."""
+    account = await get_selected_account(message.from_user.id)
+    if not account:
+        from bot.keyboards import main_kb
+        from bot.menu import set_menu
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer(
+            "❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.",
+            reply_markup=main_kb(acc_name),
+        )
+        set_menu(message.from_user.id, "main")
+    return account
+
+
+async def call_wb(account: WbAccount, method: str, **kwargs):
+    """Call a WB API method with standard error handling. Returns result or None."""
+    from bot.wb_client import WbClient
+    async with WbClient(account.token) as client:
+        func = getattr(client, method)
+        return await func(**kwargs)
+
+
+MESSAGE_LIMIT = 32000
+
+
+def chunk_message(header: str, rows: list[str], limit: int = MESSAGE_LIMIT) -> list[str]:
+    """Split header + rows into message-sized chunks."""
+    parts: list[str] = []
+    chunk = header
+    for r in rows:
+        if len(chunk) + len(r) > limit:
+            parts.append(chunk)
+            chunk = r
+        else:
+            chunk += r
+    parts.append(chunk)
+    return parts
+
+
+async def send_chunked(message: Message, parts: list[str], reply_markup=None) -> None:
+    """Send multiple message parts, attaching keyboard only to the last one."""
+    for i, p in enumerate(parts):
+        await message.answer(p, reply_markup=reply_markup if i == len(parts) - 1 else None)
+
+
 from aiogram.methods.base import TelegramMethod
 from aiogram.types import Message as AiogramMessage
 

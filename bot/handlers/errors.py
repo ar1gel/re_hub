@@ -1,7 +1,7 @@
 import logging
 
 from aiogram import Router
-from aiogram.types import ErrorEvent, Message
+from aiogram.types import ErrorEvent
 
 from bot.keyboards import main_kb
 from bot.wb_client import WbAuthError, WbRateLimitError
