@@ -133,7 +133,7 @@ async def products_stocks(message: Message) -> None:
                 for w in w_list:
                     wh_name = w.get("warehouseName", "—")
                     qty = w.get("quantity", 0)
-                    item_text += f"    {wh_name}: {qty}\n"
+                    item_text += f"      {wh_name}: {qty}\n"
 
         if len(chunk) + len(item_text) > LIMIT:
             parts.append(chunk)
