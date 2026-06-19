@@ -4,12 +4,25 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import analytics_kb, main_kb
-from bot.utils import esc
+from bot.utils import esc, filter_by_ignore_list
 from bot.menu import set_menu
 
 router = Router()
 
 LIMIT = 4000
+
+
+def _is_ignored(item: dict, account) -> bool:
+    prod = item.get("product", {}) if isinstance(item, dict) else {}
+    vendor = prod.get("vendorCode")
+    if not vendor:
+        return False
+    from db.repository import get_ignore_list
+    patterns = get_ignore_list(account)
+    for p in patterns:
+        if p.lower() in vendor.lower():
+            return True
+    return False
 
 
 def _dynamics(val: int | float) -> str:
@@ -43,6 +56,12 @@ async def analytics_funnel(message: Message) -> None:
 
     if not products:
         await message.answer("📈 Воронка продаж\n\nНет данных за период.", reply_markup=analytics_kb())
+        return
+
+    products = [p for p in products if not _is_ignored(p, account)]
+
+    if not products:
+        await message.answer("📈 Воронка продаж\n\nНет данных (все позиции в игнор-листе).", reply_markup=analytics_kb())
         return
 
     parts = []
