@@ -9,6 +9,16 @@ from bot.menu import set_menu
 
 router = Router()
 
+LIMIT = 32000
+
+
+def _dynamics(val: int | float) -> str:
+    if val > 0:
+        return f"+{val}%"
+    if val < 0:
+        return f"{val}%"
+    return "0%"
+
 
 @router.message(F.text == "📈 Воронка продаж")
 async def analytics_funnel(message: Message) -> None:
@@ -30,23 +40,79 @@ async def analytics_funnel(message: Message) -> None:
 
     rd = data.get("data", {}) if isinstance(data, dict) else {}
     products = rd.get("products", [])
-    stats = rd.get("statistics", {})
 
-    md = "# 📈 Воронка продаж\n\n"
-    if stats:
-        md += "| Метрика | Значение |\n|:--------|--------:|\n"
-        md += f"| 👁 Просмотры | {stats.get('views', '—')} |\n"
-        md += f"| 🛒 В корзину | {stats.get('addToCart', '—')} |\n"
-        md += f"| 📦 Заказы | {stats.get('orders', '—')} |\n"
-        md += f"| ✅ Выкупы | {stats.get('buyouts', '—')} |\n"
+    if not products:
+        await message.answer("📈 Воронка продаж\n\nНет данных за период.", reply_markup=analytics_kb())
+        return
 
-    if products:
-        md += "\n## По товарам\n| № | Название |\n|:-:|:---------|\n"
-        for i, p in enumerate(products, 1):
-            card = p.get("product", {}) if isinstance(p, dict) else {}
-            name = esc(card.get("title", "—"))
-            md += f"| {i} | {name} |\n"
-    else:
-        md += "\nНет данных о товарах в отчёте.\n"
+    parts = []
+    chunk = "# 📈 Воронка продаж\n\n"
 
-    await send_rich(message, md, analytics_kb())
+    for item in products:
+        prod = item.get("product", {}) if isinstance(item, dict) else {}
+        stat = item.get("statistic", {}) if isinstance(item, dict) else {}
+        sel = stat.get("selected", {})
+        cmp = stat.get("comparison", {})
+        conv = sel.get("conversions", {})
+
+        vendor = esc(prod.get("vendorCode", "—"))
+        title = esc(prod.get("title", "—"))
+        brand = esc(prod.get("brandName", "—"))
+
+        views = sel.get("openCount", 0)
+        cart = sel.get("cartCount", 0)
+        orders = sel.get("orderCount", 0)
+        order_sum = sel.get("orderSum", 0)
+        buyouts = sel.get("buyoutCount", 0)
+        buyout_sum = sel.get("buyoutSum", 0)
+        cancels = sel.get("cancelCount", 0)
+        cancel_sum = sel.get("cancelSum", 0)
+        avg_price = sel.get("avgPrice", 0)
+
+        conv_cart = conv.get("addToCartPercent", 0)
+        conv_order = conv.get("cartToOrderPercent", 0)
+        conv_buyout = conv.get("buyoutPercent", 0)
+
+        item_text = (
+            f"## `{vendor}`\n"
+            f"{title} | {brand}\n\n"
+            f"👁 **Переходы:** {views}"
+        )
+        if cmp:
+            item_text += f" ({_dynamics(cmp.get('openCountDynamic', 0))})"
+        item_text += "\n"
+
+        item_text += f"🛒 **В корзину:** {cart}"
+        if cmp:
+            item_text += f" ({_dynamics(cmp.get('cartCountDynamic', 0))})"
+        item_text += f"  — конверсия {conv_cart}%\n"
+
+        item_text += f"📦 **Заказы:** {orders}"
+        if cmp:
+            item_text += f" ({_dynamics(cmp.get('orderCountDynamic', 0))})"
+        item_text += f"  — конверсия {conv_order}%\n"
+
+        item_text += f"✅ **Выкупы:** {buyouts}"
+        if cmp:
+            item_text += f" ({_dynamics(cmp.get('buyoutCountDynamic', 0))})"
+        item_text += f"  — выкуп {conv_buyout}%\n"
+
+        item_text += f"❌ **Отмены:** {cancels}\n"
+
+        item_text += (
+            f"\n💰 Сумма заказов: {order_sum:,} ₽\n"
+            f"💰 Сумма выкупов: {buyout_sum:,} ₽\n"
+            f"💰 Средняя цена: {avg_price:,} ₽\n"
+        )
+
+        if len(chunk) + len(item_text) > LIMIT:
+            parts.append(chunk)
+            chunk = item_text
+        else:
+            chunk += item_text
+        chunk += "---\n"
+
+    parts.append(chunk)
+
+    for i, p in enumerate(parts):
+        await send_rich(message, p, analytics_kb() if i == len(parts) - 1 else None)
