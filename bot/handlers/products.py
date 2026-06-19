@@ -16,6 +16,19 @@ router = Router()
 LIMIT = 32000
 
 
+def _page(md: str, rows: list[str], reply_markup=None):
+    chunk = md
+    parts = []
+    for r in rows:
+        if len(chunk) + len(r) > LIMIT:
+            parts.append(chunk)
+            chunk = r
+        else:
+            chunk += r
+    parts.append(chunk)
+    return parts, reply_markup
+
+
 @router.message(F.text == "📋 Список товаров")
 async def products_list(message: Message) -> None:
     async with get_session() as session:
