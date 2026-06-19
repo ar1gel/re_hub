@@ -16,19 +16,6 @@ router = Router()
 LIMIT = 32000
 
 
-def _page(md: str, rows: list[str], reply_markup=None):
-    chunk = md
-    parts = []
-    for r in rows:
-        if len(chunk) + len(r) > LIMIT:
-            parts.append(chunk)
-            chunk = r
-        else:
-            chunk += r
-    parts.append(chunk)
-    return parts, reply_markup
-
-
 @router.message(F.text == "📋 Список товаров")
 async def products_list(message: Message) -> None:
     async with get_session() as session:
@@ -119,7 +106,9 @@ async def products_stocks(message: Message) -> None:
 
     all_items.sort(key=lambda x: x.get("title", "").lower())
 
-    rows = []
+    parts = []
+    chunk = f"📦 Остатки ({len(all_items)} позиций)\n\n"
+
     for item in all_items:
         v = esc(item["vendorCode"])
         wh = item["warehouses"]
@@ -131,28 +120,33 @@ async def products_stocks(message: Message) -> None:
             region = WAREHOUSE_TO_REGION.get(wh_name, "Другие")
             by_region[region].append(w)
 
+        item_text = f"🔹 {v} — {total} шт.\n"
+
         if total == 0:
-            rows.append(f"\n## `{v}` — **0** шт.\n\n")
-            continue
+            item_text += "Нет остатков\n"
+        else:
+            for region in sorted(by_region):
+                w_list = by_region[region]
+                w_list.sort(key=lambda w: w.get("warehouseName", ""))
+                region_total = sum(w.get("quantity", 0) for w in w_list)
+                item_text += f"  {region}: {region_total}\n"
+                for w in w_list:
+                    wh_name = w.get("warehouseName", "—")
+                    qty = w.get("quantity", 0)
+                    item_text += f"    {wh_name}: {qty}\n"
 
-        rows.append(f"\n## `{v}` — **{total}** шт.\n| Регион | Склад | Шт. |\n|:---:|:---|----:|\n")
-        for region in sorted(by_region):
-            w_list = by_region[region]
-            w_list.sort(key=lambda w: w.get("warehouseName", ""))
-            region_total = sum(w.get("quantity", 0) for w in w_list)
-            for i, w in enumerate(w_list):
-                rlabel = (region[:8] + "..") if len(region) > 10 and i == 0 else (region if i == 0 else "")
-                wh_name = w.get("warehouseName", "—")
-                if len(wh_name) > 14:
-                    wh_name = wh_name[:12] + ".."
-                rows.append(f"| {rlabel} | {wh_name} | {w.get('quantity', 0)} |\n")
-            rows.append(f"| | | **{region_total}** |\n")
-        rows.append("---\n")
+        if len(chunk) + len(item_text) > LIMIT:
+            parts.append(chunk)
+            chunk = item_text
+        else:
+            chunk += item_text
+        chunk += "—————————\n"
 
-    header = f"# 📦 Остатки ({len(all_items)} позиций)\n"
-    parts, kb = _page(header, rows, products_kb())
+    parts.append(chunk)
+
+    kb = products_kb()
     for i, p in enumerate(parts):
-        await send_rich(message, p, kb if i == len(parts) - 1 else None)
+        await message.answer(p, reply_markup=kb if i == len(parts) - 1 else None)
 
 
 @router.message(F.text == "💰 Цены")
