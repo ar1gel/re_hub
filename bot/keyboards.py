@@ -8,7 +8,7 @@ def main_kb() -> ReplyKeyboardMarkup:
     b = ReplyKeyboardBuilder()
     b.row(KeyboardButton(text="📦 Товары"), KeyboardButton(text="📋 Заказы"))
     b.row(KeyboardButton(text="📊 Аналитика"), KeyboardButton(text="💰 Финансы"))
-    b.row(KeyboardButton(text="🔑 Аккаунты"), KeyboardButton(text="❓ Помощь"))
+    b.row(KeyboardButton(text="🔑 Аккаунты"), KeyboardButton(text="🔄 Сменить аккаунт"))
     return b.as_markup(resize_keyboard=True)
 
 

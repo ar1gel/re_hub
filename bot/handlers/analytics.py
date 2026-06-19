@@ -4,7 +4,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import analytics_kb, main_kb
-from bot.utils import esc, filter_by_ignore_list
+from bot.utils import esc, filter_by_ignore_list, get_selected_account
 from bot.menu import set_menu
 
 router = Router()
@@ -35,14 +35,12 @@ def _dynamics(val: int | float) -> str:
 
 @router.message(F.text == "📈 Воронка продаж")
 async def analytics_funnel(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
         try:

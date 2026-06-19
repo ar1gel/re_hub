@@ -6,7 +6,7 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from aiogram.types import Message
 
-from db.repository import get_ignore_list
+from db.repository import get_ignore_list, get_accounts, get_account_by_id
 from db.models import WbAccount
 
 
@@ -40,6 +40,22 @@ def filter_by_ignore_list(
         return False
 
     return [i for i in items if not _is_ignored(i)]
+
+
+async def get_selected_account(tg_id: int) -> WbAccount | None:
+    from bot.menu import get_account as get_selected_id
+    from db.engine import get_session
+
+    selected_id = get_selected_id(tg_id)
+    async with get_session() as session:
+        accounts = await get_accounts(session, tg_id)
+        if not accounts:
+            return None
+        if selected_id:
+            for acc in accounts:
+                if acc.id == selected_id:
+                    return acc
+        return accounts[0]
 
 
 from aiogram.methods.base import TelegramMethod

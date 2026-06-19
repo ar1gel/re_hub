@@ -6,7 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import finances_kb, main_kb
-from bot.utils import esc, send_rich
+from bot.utils import esc, send_rich, get_selected_account
 from bot.menu import set_menu
 
 router = Router()
@@ -14,14 +14,12 @@ router = Router()
 
 @router.message(F.text == "📄 Отчёт по реализации")
 async def finances_report(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     today = datetime.now()
     date_to = today.strftime("%Y-%m-%d")
     date_from = (today - timedelta(days=30)).strftime("%Y-%m-%d")

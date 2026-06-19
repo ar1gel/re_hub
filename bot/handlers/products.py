@@ -6,7 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import products_kb, main_kb
-from bot.utils import filter_by_ignore_list, esc, send_rich
+from bot.utils import filter_by_ignore_list, esc, send_rich, get_selected_account
 from bot.warehouses import WAREHOUSE_TO_REGION
 from bot.menu import set_menu
 from bot.cache import get as cache_get, set as cache_set
@@ -31,14 +31,12 @@ def _page(md: str, rows: list[str], reply_markup=None):
 
 @router.message(F.text == "📋 Список товаров")
 async def products_list(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
         try:
@@ -65,14 +63,12 @@ async def products_list(message: Message) -> None:
 
 @router.message(F.text == "📦 Остатки")
 async def products_stocks(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
         try:
@@ -164,14 +160,12 @@ async def products_stocks(message: Message) -> None:
 
 @router.message(F.text == "💰 Цены")
 async def products_prices(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
         try:

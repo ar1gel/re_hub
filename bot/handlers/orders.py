@@ -6,7 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import orders_kb, main_kb
-from bot.utils import filter_by_ignore_list, esc, send_rich
+from bot.utils import filter_by_ignore_list, esc, send_rich, get_selected_account
 from bot.menu import set_menu
 
 router = Router()
@@ -27,14 +27,12 @@ def _build_rows(items: list[dict]) -> list[str]:
 
 @router.message(F.text == "📥 Новые заказы")
 async def orders_new(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     date_from = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
@@ -76,14 +74,12 @@ def _build_sales_rows(items: list[dict]) -> list[str]:
 
 @router.message(F.text == "📤 Продажи")
 async def orders_sales(message: Message) -> None:
-    async with get_session() as session:
-        accounts = await get_accounts(session, message.from_user.id)
-    if not accounts:
+    account = await get_selected_account(message.from_user.id)
+    if not account:
         await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
         set_menu(message.from_user.id, "main")
         return
 
-    account = accounts[0]
     date_from = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:

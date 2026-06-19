@@ -3,9 +3,10 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from db.engine import get_session
-from db.repository import get_or_create_user
+from db.repository import get_or_create_user, get_accounts
 from bot.keyboards import main_kb, products_kb, orders_kb, analytics_kb, finances_kb
-from bot.menu import set_menu
+from bot.menu import set_menu, get_account, set_account
+from bot.utils import esc
 
 router = Router()
 
@@ -19,6 +20,9 @@ async def cmd_start(message: Message) -> None:
             username=message.from_user.username,
             full_name=message.from_user.full_name,
         )
+        accounts = await get_accounts(session, message.from_user.id)
+    if accounts and get_account(message.from_user.id) is None:
+        set_account(message.from_user.id, accounts[0].id)
     await message.answer(
         f"👋 <b>Привет, {message.from_user.full_name or 'пользователь'}!</b>\n\n"
         "Я — бот для работы с API Wildberries.\n"
@@ -66,20 +70,24 @@ async def reply_accounts(message: Message) -> None:
     await show_accounts_list(message.from_user.id, message)
 
 
-@router.message(F.text == "❓ Помощь")
-async def reply_help(message: Message) -> None:
-    await message.answer(
-        "❓ <b>Помощь</b>\n\n"
-        "Этот бот позволяет работать с Wildberries API.\n\n"
-        "<b>Доступные разделы:</b>\n"
-        "📦 <b>Товары</b> — просмотр товаров, остатков, цен\n"
-        "📋 <b>Заказы</b> — просмотр заказов и продаж\n"
-        "📊 <b>Аналитика</b> — воронка продаж\n"
-        "💰 <b>Финансы</b> — отчёты по реализации\n"
-        "🔑 <b>Аккаунты WB</b> — управление токенами\n\n"
-        "Для начала добавь токен WB API в разделе аккаунтов.\n"
-        "Токен можно получить в личном кабинете WB: "
-        "Настройки → Доступ к API",
-        reply_markup=main_kb(),
-    )
-    set_menu(message.from_user.id, "main")
+@router.message(F.text == "🔄 Сменить аккаунт")
+async def reply_switch_account(message: Message) -> None:
+    async with get_session() as session:
+        accounts = await get_accounts(session, message.from_user.id)
+    if not accounts:
+        await message.answer("❌ У тебя нет добавленных аккаунтов.\n\nНажми «Аккаунты», чтобы добавить.", reply_markup=main_kb())
+        return
+    if len(accounts) == 1:
+        await message.answer(f"ℹ️ У тебя только один аккаунт: {esc(accounts[0].name)}", reply_markup=main_kb())
+        return
+
+    current_id = get_account(message.from_user.id)
+    current_idx = 0
+    for i, acc in enumerate(accounts):
+        if acc.id == current_id:
+            current_idx = i
+            break
+    next_idx = (current_idx + 1) % len(accounts)
+    next_acc = accounts[next_idx]
+    set_account(message.from_user.id, next_acc.id)
+    await message.answer(f"✅ Аккаунт: <b>{esc(next_acc.name)}</b>", reply_markup=main_kb())
