@@ -42,12 +42,11 @@ async def products_list(message: Message) -> None:
     from bot.wb_client import WbClient
     async with WbClient(account.token) as client:
         try:
-            data = await client.get_products_list()
+            cards = await client.get_products_list()
         except Exception as e:
             await message.answer(f"❌ Ошибка: {esc(e)}", reply_markup=products_kb())
             return
 
-    cards = data.get("cards", []) if isinstance(data, dict) else []
     cards = filter_by_ignore_list(cards, account)
     if not cards:
         await message.answer("📭 Товары не найдены.", reply_markup=products_kb())
