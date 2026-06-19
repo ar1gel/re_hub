@@ -113,7 +113,7 @@ async def products_stocks(message: Message) -> None:
                 rlabel = region if i == 0 else ""
                 wh_name = w.get("warehouseName", "—")
                 rows.append(f"| {rlabel} | {wh_name} | {w.get('quantity', 0)} |\n")
-            rows.append(f"| | **Итого** | **{region_total}** |\n")
+            rows.append(f"| | | **{region_total}** |\n")
         rows.append("---\n")
 
     header = f"# 📦 Остатки ({len(stocks)} позиций)\n"
