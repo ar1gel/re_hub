@@ -4,12 +4,12 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import analytics_kb, main_kb
-from bot.utils import esc, send_rich
+from bot.utils import esc
 from bot.menu import set_menu
 
 router = Router()
 
-LIMIT = 32000
+LIMIT = 4000
 
 
 def _dynamics(val: int | float) -> str:
@@ -46,7 +46,7 @@ async def analytics_funnel(message: Message) -> None:
         return
 
     parts = []
-    chunk = "# 📈 Воронка продаж\n\n"
+    chunk = "📈 Воронка продаж\n\n"
 
     for item in products:
         prod = item.get("product", {}) if isinstance(item, dict) else {}
@@ -66,43 +66,40 @@ async def analytics_funnel(message: Message) -> None:
         buyouts = sel.get("buyoutCount", 0)
         buyout_sum = sel.get("buyoutSum", 0)
         cancels = sel.get("cancelCount", 0)
-        cancel_sum = sel.get("cancelSum", 0)
         avg_price = sel.get("avgPrice", 0)
 
         conv_cart = conv.get("addToCartPercent", 0)
         conv_order = conv.get("cartToOrderPercent", 0)
         conv_buyout = conv.get("buyoutPercent", 0)
 
-        item_text = (
-            f"## `{vendor}`\n"
-            f"{title} | {brand}\n\n"
-            f"`👁 Переходы: {views}"
-        )
+        item_text = f"🔹 {vendor}\n{title} | {brand}\n\n"
+
+        item_text += f"👁 Переходы: {views}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('openCountDynamic', 0))})"
-        item_text += "`\n\n"
+        item_text += "\n"
 
-        item_text += f"`🛒 В корзину: {cart}"
+        item_text += f"🛒 В корзину: {cart}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('cartCountDynamic', 0))})"
-        item_text += f"\nКонверсия: {conv_cart}%`\n\n"
+        item_text += f"\nКонверсия: {conv_cart}%\n"
 
-        item_text += f"`📦 Заказы: {orders}"
+        item_text += f"📦 Заказы: {orders}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('orderCountDynamic', 0))})"
-        item_text += f"\nКонверсия: {conv_order}%`\n\n"
+        item_text += f"\nКонверсия: {conv_order}%\n"
 
-        item_text += f"`✅ Выкупы: {buyouts}"
+        item_text += f"✅ Выкупы: {buyouts}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('buyoutCountDynamic', 0))})"
-        item_text += f"\nВыкуп: {conv_buyout}%`\n\n"
+        item_text += f"\nВыкуп: {conv_buyout}%\n"
 
-        item_text += f"`❌ Отмены: {cancels}`\n\n"
+        item_text += f"❌ Отмены: {cancels}\n"
 
         item_text += (
-            f"`💰 Сумма заказов: {order_sum:,} ₽\n"
-            f"💰 Сумма выкупов: {buyout_sum:,} ₽\n"
-            f"💰 Средняя цена: {avg_price:,} ₽`\n"
+            f"\nСумма заказов: {order_sum:,} ₽\n"
+            f"Сумма выкупов: {buyout_sum:,} ₽\n"
+            f"Средняя цена: {avg_price:,} ₽\n"
         )
 
         if len(chunk) + len(item_text) > LIMIT:
@@ -110,9 +107,10 @@ async def analytics_funnel(message: Message) -> None:
             chunk = item_text
         else:
             chunk += item_text
-        chunk += "---\n"
+        chunk += "—————————\n"
 
     parts.append(chunk)
 
+    kb = analytics_kb()
     for i, p in enumerate(parts):
-        await send_rich(message, p, analytics_kb() if i == len(parts) - 1 else None)
+        await message.answer(p, reply_markup=kb if i == len(parts) - 1 else None)
