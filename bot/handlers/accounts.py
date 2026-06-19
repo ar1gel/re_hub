@@ -49,7 +49,7 @@ def _account_from_text(text: str, accounts: list) -> tuple[int, object] | None:
     return None
 
 
-@router.message(F.text.startswitesc("🔑 "))
+@router.message(F.text.startswith("🔑 "))
 async def account_select_by_name(message: Message) -> None:
     if get_menu(message.from_user.id) != "accounts":
         return
