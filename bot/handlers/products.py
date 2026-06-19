@@ -171,7 +171,7 @@ async def products_prices(message: Message) -> None:
             disc = sizes[0].get("discountedPrice", cur)
         else:
             cur = disc = 0
-        rows.append(f"| `{v}` | `{cur:,.2f} ₽` | `{disc:,.2f} ₽` |\n")
+        rows.append(f"| `{v}` | `{cur:.2f} ₽` | `{disc:.2f} ₽` |\n")
     parts = chunk_message(header, rows)
     kb = products_kb()
     for i, p in enumerate(parts):

@@ -16,7 +16,7 @@ def _build_rows(items: list[dict]) -> list[str]:
         qty = o.get("quantity", 0)
         total = o.get("totalPrice") or 0
         status = esc(o.get("wbStatus", "—"))
-        rows.append(f"| `{art}` | {qty} | `{total:,.2f} ₽` | {status} |\n")
+        rows.append(f"| `{art}` | {qty} | `{total:.2f} ₽` | {status} |\n")
     return rows
 
 
@@ -51,7 +51,7 @@ def _build_sales_rows(items: list[dict]) -> list[str]:
         art = esc(o.get("supplierArticle", "—"))
         total = o.get("finishedPrice") or o.get("priceWithDisc") or o.get("totalPrice") or 0
         for_pay = o.get("forPay") or 0
-        rows.append(f"| `{art}` | `{total:,.0f} ₽` | `{for_pay:,.0f} ₽` |\n")
+        rows.append(f"| `{art}` | `{total:.0f} ₽` | `{for_pay:.0f} ₽` |\n")
     return rows
 
 
@@ -84,12 +84,12 @@ async def orders_sales(message: Message) -> None:
     parts = []
 
     if fbo:
-        header = f"# 📦 Продажи FBO — Склад WB ({len(fbo)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbo_total:,.0f} ₽` | `{fbo_for_pay:,.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
+        header = f"# 📦 Продажи FBO — Склад WB ({len(fbo)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbo_total:.0f} ₽` | `{fbo_for_pay:.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
         rows = _build_sales_rows(fbo)
         parts.extend(chunk_message(header, rows))
 
     if fbs:
-        header = f"# 📋 Продажи FBS — Склад продавца ({len(fbs)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbs_total:,.0f} ₽` | `{fbs_for_pay:,.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
+        header = f"# 📋 Продажи FBS — Склад продавца ({len(fbs)} шт.)\n\n| Сумма | К перечислению |\n|------:|---------------:|\n| `{fbs_total:.0f} ₽` | `{fbs_for_pay:.0f} ₽` |\n\n| Артикул | Цена | К перечислению |\n|:--------|-----:|---------------:|\n"
         rows = _build_sales_rows(fbs)
         parts.extend(chunk_message(header, rows))
 
