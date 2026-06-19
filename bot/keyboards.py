@@ -4,11 +4,11 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from db.models import WbAccount
 
 
-def main_kb() -> ReplyKeyboardMarkup:
+def main_kb(account_name: str | None = None) -> ReplyKeyboardMarkup:
     b = ReplyKeyboardBuilder()
     b.row(KeyboardButton(text="📦 Товары"), KeyboardButton(text="📋 Заказы"))
     b.row(KeyboardButton(text="📊 Аналитика"), KeyboardButton(text="💰 Финансы"))
-    b.row(KeyboardButton(text="🔑 Аккаунты"), KeyboardButton(text="🔄 Сменить аккаунт"))
+    b.row(KeyboardButton(text="🔑 Аккаунты"), KeyboardButton(text=f"🔄 {account_name}" if account_name else "🔄 Сменить аккаунт"))
     return b.as_markup(resize_keyboard=True)
 
 

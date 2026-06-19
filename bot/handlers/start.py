@@ -6,7 +6,7 @@ from db.engine import get_session
 from db.repository import get_or_create_user, get_accounts
 from bot.keyboards import main_kb, products_kb, orders_kb, analytics_kb, finances_kb
 from bot.menu import set_menu, get_account, set_account
-from bot.utils import esc
+from bot.utils import esc, get_account_name
 
 router = Router()
 
@@ -23,20 +23,22 @@ async def cmd_start(message: Message) -> None:
         accounts = await get_accounts(session, message.from_user.id)
     if accounts and get_account(message.from_user.id) is None:
         set_account(message.from_user.id, accounts[0].id)
+    acc_name = await get_account_name(message.from_user.id)
     await message.answer(
         f"👋 <b>Привет, {message.from_user.full_name or 'пользователь'}!</b>\n\n"
         "Я — бот для работы с API Wildberries.\n"
         "Здесь ты можешь управлять товарами, заказами, "
         "смотреть аналитику и финансы.\n\n"
         "Чтобы начать, добавь токен WB в разделе «Аккаунты WB».",
-        reply_markup=main_kb(),
+        reply_markup=main_kb(acc_name),
     )
     set_menu(message.from_user.id, "main")
 
 
 @router.message(F.text == "🔙 Назад")
 async def back_main(message: Message) -> None:
-    await message.answer("🏠 <b>Главное меню</b>\n\nВыбери раздел", reply_markup=main_kb())
+    acc_name = await get_account_name(message.from_user.id)
+    await message.answer("🏠 <b>Главное меню</b>\n\nВыбери раздел", reply_markup=main_kb(acc_name))
     set_menu(message.from_user.id, "main")
 
 
@@ -70,15 +72,15 @@ async def reply_accounts(message: Message) -> None:
     await show_accounts_list(message.from_user.id, message)
 
 
-@router.message(F.text == "🔄 Сменить аккаунт")
+@router.message(F.text.startswith("🔄 "))
 async def reply_switch_account(message: Message) -> None:
     async with get_session() as session:
         accounts = await get_accounts(session, message.from_user.id)
     if not accounts:
-        await message.answer("❌ У тебя нет добавленных аккаунтов.\n\nНажми «Аккаунты», чтобы добавить.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ У тебя нет добавленных аккаунтов.\n\nНажми «Аккаунты», чтобы добавить.", reply_markup=main_kb(acc_name))
         return
     if len(accounts) == 1:
-        await message.answer(f"ℹ️ У тебя только один аккаунт: {esc(accounts[0].name)}", reply_markup=main_kb())
         return
 
     current_id = get_account(message.from_user.id)
@@ -90,4 +92,5 @@ async def reply_switch_account(message: Message) -> None:
     next_idx = (current_idx + 1) % len(accounts)
     next_acc = accounts[next_idx]
     set_account(message.from_user.id, next_acc.id)
-    await message.answer(f"✅ Аккаунт: <b>{esc(next_acc.name)}</b>", reply_markup=main_kb())
+    acc_name = await get_account_name(message.from_user.id)
+    await message.answer("✅", reply_markup=main_kb(acc_name))

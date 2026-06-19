@@ -6,7 +6,7 @@ from aiogram.types import Message
 from db.engine import get_session
 from db.repository import get_accounts
 from bot.keyboards import products_kb, main_kb
-from bot.utils import filter_by_ignore_list, esc, send_rich, get_selected_account
+from bot.utils import filter_by_ignore_list, esc, send_rich, get_selected_account, get_account_name
 from bot.warehouses import WAREHOUSE_TO_REGION
 from bot.menu import set_menu
 from bot.cache import get as cache_get, set as cache_set
@@ -33,7 +33,8 @@ def _page(md: str, rows: list[str], reply_markup=None):
 async def products_list(message: Message) -> None:
     account = await get_selected_account(message.from_user.id)
     if not account:
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -65,7 +66,8 @@ async def products_list(message: Message) -> None:
 async def products_stocks(message: Message) -> None:
     account = await get_selected_account(message.from_user.id)
     if not account:
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -162,7 +164,8 @@ async def products_stocks(message: Message) -> None:
 async def products_prices(message: Message) -> None:
     account = await get_selected_account(message.from_user.id)
     if not account:
-        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала добавь аккаунт WB.\n\nНажми «Аккаунты» в главном меню.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 

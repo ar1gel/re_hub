@@ -58,6 +58,11 @@ async def get_selected_account(tg_id: int) -> WbAccount | None:
         return accounts[0]
 
 
+async def get_account_name(tg_id: int) -> str | None:
+    acc = await get_selected_account(tg_id)
+    return acc.name if acc else None
+
+
 from aiogram.methods.base import TelegramMethod
 from aiogram.types import Message as AiogramMessage
 

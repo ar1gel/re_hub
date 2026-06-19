@@ -7,7 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from db.engine import get_session
 from db.repository import get_or_create_user, get_accounts, get_account_by_id, add_account, delete_account, get_ignore_list, add_to_ignore, remove_from_ignore
 from bot.keyboards import accounts_list_kb, account_actions_kb, ignore_list_kb, main_kb, back_kb, remove_kb
-from bot.utils import esc
+from bot.utils import esc, get_account_name
 from bot.menu import set_menu, get_menu, set_account, get_account
 from bot.wb_client import WbClient
 
@@ -81,7 +81,8 @@ async def back_to_accounts_list(message: Message) -> None:
 async def account_info(message: Message) -> None:
     account_id = get_account(message.from_user.id)
     if account_id is None:
-        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -89,7 +90,8 @@ async def account_info(message: Message) -> None:
         account = await get_account_by_id(session, account_id, message.from_user.id)
 
     if account is None:
-        await message.answer("❌ Аккаунт не найден.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Аккаунт не найден.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -115,7 +117,8 @@ async def account_info(message: Message) -> None:
 async def account_delete_confirm(message: Message) -> None:
     account_id = get_account(message.from_user.id)
     if account_id is None:
-        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -132,7 +135,8 @@ async def account_delete_confirm(message: Message) -> None:
 async def account_ignore_list(message: Message) -> None:
     account_id = get_account(message.from_user.id)
     if account_id is None:
-        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Сначала выбери аккаунт.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -140,7 +144,8 @@ async def account_ignore_list(message: Message) -> None:
         account = await get_account_by_id(session, account_id, message.from_user.id)
 
     if account is None:
-        await message.answer("❌ Аккаунт не найден.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Аккаунт не найден.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
@@ -179,7 +184,8 @@ async def ignore_add_vendor(message: Message, state: FSMContext) -> None:
     account_id = get_account(message.from_user.id)
     if account_id is None:
         await state.clear()
-        await message.answer("❌ Аккаунт не выбран.", reply_markup=main_kb())
+        acc_name = await get_account_name(message.from_user.id)
+        await message.answer("❌ Аккаунт не выбран.", reply_markup=main_kb(acc_name))
         set_menu(message.from_user.id, "main")
         return
 
