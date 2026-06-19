@@ -80,29 +80,29 @@ async def analytics_funnel(message: Message) -> None:
         )
         if cmp:
             item_text += f" ({_dynamics(cmp.get('openCountDynamic', 0))})"
-        item_text += "\n"
+        item_text += "\n\n"
 
         item_text += f"🛒 **В корзину:** {cart}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('cartCountDynamic', 0))})"
-        item_text += f"  — конверсия {conv_cart}%\n"
+        item_text += f"\nКонверсия: {conv_cart}%\n\n"
 
         item_text += f"📦 **Заказы:** {orders}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('orderCountDynamic', 0))})"
-        item_text += f"  — конверсия {conv_order}%\n"
+        item_text += f"\nКонверсия: {conv_order}%\n\n"
 
         item_text += f"✅ **Выкупы:** {buyouts}"
         if cmp:
             item_text += f" ({_dynamics(cmp.get('buyoutCountDynamic', 0))})"
-        item_text += f"  — выкуп {conv_buyout}%\n"
+        item_text += f"\nВыкуп: {conv_buyout}%\n\n"
 
-        item_text += f"❌ **Отмены:** {cancels}\n"
+        item_text += f"❌ **Отмены:** {cancels}\n\n"
 
         item_text += (
-            f"\n💰 Сумма заказов: {order_sum:,} ₽\n"
-            f"💰 Сумма выкупов: {buyout_sum:,} ₽\n"
-            f"💰 Средняя цена: {avg_price:,} ₽\n"
+            f"💰 Сумма заказов: **{order_sum:,} ₽**\n"
+            f"💰 Сумма выкупов: **{buyout_sum:,} ₽**\n"
+            f"💰 Средняя цена: **{avg_price:,} ₽**\n"
         )
 
         if len(chunk) + len(item_text) > LIMIT:
